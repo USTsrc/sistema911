@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema 911 — Gestión de Cámaras UST Copán</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --blue:#388bfd;--blue2:#1f6feb;--green:#3fb950;--red:#f85149;
+  --yellow:#d29922;--purple:#bc8cff;--teal:#2ea043;
+  --text:#e6edf3;--text2:#8b949e;--text3:#6e7681;--accent:#58a6ff;
+  --win-blue:#0078d4;--win-border:#adadad;
+  --radius:10px;--transition:.15s;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* ── LAYOUT ── */
+.app{display:grid;grid-template-columns:255px 1fr 370px;height:100vh}
+.sidebar,.main,.chatpanel{height:100vh;overflow-y:auto;overflow-x:hidden}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:18px 14px}
+.main{background:var(--bg);padding:22px}
+.chatpanel{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column}
+
+/* ── LOGO ── */
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:11px 12px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border)}
+.logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--blue2),var(--purple));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.logo h1{font-size:13px;font-weight:700;color:var(--accent)}
+.logo p{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:1px}
+
+/* ── SIDEBAR ── */
+.s-sect{margin-bottom:18px}
+.s-ttl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;padding:0 3px;display:flex;align-items:center;gap:5px}
+.s-btn{width:100%;text-align:left;padding:8px 11px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text2);font-family:'Sora',sans-serif;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all var(--transition);margin-bottom:2px}
+.s-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border)}
+.s-btn.active{background:rgba(56,139,253,.15);color:var(--accent);border-color:rgba(56,139,253,.35)}
+.s-btn .bdg{margin-left:auto;font-size:10.5px;padding:1px 6px;border-radius:10px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.bg{background:rgba(56,139,253,.2);color:var(--blue)}.gg{background:rgba(63,185,80,.2);color:var(--green)}.rg{background:rgba(248,81,73,.2);color:var(--red)}.yg{background:rgba(210,153,34,.2);color:var(--yellow)}.pg{background:rgba(188,140,255,.2);color:var(--purple)}
+.s-mini{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.s-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px;text-align:center}
+.s-card .n{font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace}
+.s-card .l{font-size:10px;color:var(--text3);margin-top:1px}
+.s-sel{width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Sora',sans-serif;font-size:12.5px;margin-bottom:7px;cursor:pointer}
+.s-sel:focus{outline:none;border-color:var(--accent)}
+
+/* ── BTN ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;border-radius:8px;font-family:'Sora',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--border);transition:all var(--transition);background:var(--bg3);color:var(--text);text-decoration:none}
+.btn:hover{background:var(--bg2);border-color:var(--accent);color:var(--accent)}
+.btn-pri{background:var(--blue2);border-color:var(--blue2);color:#fff}.btn-pri:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-grn{background:rgba(63,185,80,.15);border-color:rgba(63,185,80,.4);color:var(--green)}.btn-grn:hover{background:rgba(63,185,80,.25);color:var(--green)}
+.btn-red{background:rgba(248,81,73,.15);border-color:rgba(248,81,73,.4);color:var(--red)}.btn-red:hover{background:rgba(248,81,73,.25);color:var(--red)}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+
+/* ── MAIN HEADER ── */
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.mhdr h2{font-size:19px;font-weight:700}
+.mhdr .time{font-size:11.5px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+
+/* ── STAT CARDS ── */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;align-items:center;gap:10px;transition:border-color var(--transition)}
+.stat:hover{border-color:var(--accent)}
+.stat .ico{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.stat .nn{font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace}
+.stat .ll{font-size:11px;color:var(--text3)}
+
+/* ── MAP ── */
+.map-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:15px;margin-bottom:18px}
+.chdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:7px}
+.ctit{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.map-frame{border-radius:8px;overflow:hidden}
+.map-frame iframe{display:block;width:100%;border:none}
+
+/* ── SEARCH & TOOLBAR ── */
+.toolbar{display:flex;gap:7px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.srchwrap{flex:1;min-width:180px;position:relative}
+.srchwrap .fa-search{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;pointer-events:none}
+.srchinp{width:100%;padding:8px 13px 8px 32px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:'Sora',sans-serif;font-size:12.5px;transition:border-color var(--transition)}
+.srchinp:focus{outline:none;border-color:var(--accent)}
+
+/* ── PAGINATION ── */
+.pgbar{display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap}
+.pgbar span{font-size:12px;color:var(--text3)}
+.pgbtn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all var(--transition)}
+.pgbtn:hover{border-color:var(--accent);color:var(--accent)}
+.pgbtn.cur{background:var(--blue2);border-color:var(--blue2);color:#fff}
+.pgbtn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── CAM GRID ── */
+.cam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px}
+.cam-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:15px;transition:all .2s;position:relative;overflow:hidden}
+.cam-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
+.cam-card.active::before{background:var(--green)}
+.cam-card.inactive::before{background:var(--red)}
+.cam-card.maintenance::before{background:var(--yellow)}
+.cam-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+
+/* IP HYPERLINK — core feature */
+.ip-link{color:var(--accent);text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12px;display:inline-flex;align-items:center;gap:4px;padding:1px 5px;border-radius:4px;border:1px solid rgba(88,166,255,.2);background:rgba(88,166,255,.07);transition:all .15s}
+.ip-link:hover{background:rgba(88,166,255,.18);border-color:var(--accent);text-decoration:none;color:var(--blue)}
+.ip-link .ext{font-size:9px;opacity:.6}
+
+.cam-code{font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-bottom:5px}
+.cam-st{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-bottom:9px}
+.cam-st.active{background:rgba(63,185,80,.15);color:var(--green)}
+.cam-st.inactive{background:rgba(248,81,73,.15);color:var(--red)}
+.cam-st.maintenance{background:rgba(210,153,34,.15);color:var(--yellow)}
+.cam-info{font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:3.5px}
+.cam-info span{display:flex;align-items:center;gap:5px}
+.cam-info .fi{width:13px;color:var(--text3);flex-shrink:0}
+.upbar{height:3px;background:var(--bg3);border-radius:2px;margin:9px 0 4px;overflow:hidden}
+.upfill{height:100%;border-radius:2px;transition:width .6s ease}
+.cam-acts{display:flex;gap:5px;margin-top:9px}
+.cam-acts button,.cam-acts a{flex:1;padding:5px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;cursor:pointer;transition:all var(--transition);font-family:'Sora',sans-serif;display:flex;align-items:center;justify-content:center;gap:4px;text-decoration:none}
+.cam-acts button:hover,.cam-acts a:hover{border-color:var(--accent);color:var(--accent);background:rgba(88,166,255,.08)}
+.cam-acts .web-link{border-color:rgba(63,185,80,.3);color:var(--green)}
+.cam-acts .web-link:hover{background:rgba(63,185,80,.12);border-color:var(--green)}
+.tag{display:inline-block;padding:2px 7px;border-radius:12px;font-size:10.5px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.tag-lpr{background:rgba(188,140,255,.15);color:var(--purple);border:1px solid rgba(188,140,255,.3)}
+.tag-ptz{background:rgba(56,139,253,.15);color:var(--blue);border:1px solid rgba(56,139,253,.3)}
+.tag-fija{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+
+/* ping dot */
+.ping-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px;cursor:pointer;transition:transform .15s;flex-shrink:0}
+.ping-dot:hover{transform:scale(1.5)}
+.ping-ok{background:var(--green);animation:pulse 2s infinite}
+.ping-bad{background:var(--red)}
+.ping-unk{background:var(--text3)}
+.ping-checking{background:var(--yellow);animation:spin .6s linear infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+
+/* ── PING POPUP ── */
+.ping-popup{position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:0;min-width:320px;max-width:400px;box-shadow:0 16px 48px rgba(0,0,0,.65);animation:min .18s ease;overflow:hidden}
+.pp-hdr{padding:12px 15px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.pp-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace}
+.pp-close{width:22px;height:22px;border-radius:50%;background:transparent;border:1px solid var(--border);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s}
+.pp-close:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.pp-body{padding:14px 15px}
+.pp-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(48,54,61,.6);font-size:12px}
+.pp-row:last-child{border-bottom:none}
+.pp-lbl{color:var(--text3);font-size:11.5px}
+.pp-val{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600}
+.pp-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin:10px 0 4px}
+.pp-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.pp-packets{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-top:10px}
+.pp-pkt{height:20px;border-radius:3px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;transition:background .2s}
+.pp-pkt.sent{background:var(--bg3);color:var(--text3)}
+.pp-pkt.ok{background:rgba(63,185,80,.3);color:var(--green)}
+.pp-pkt.fail{background:rgba(248,81,73,.3);color:var(--red)}
+.pp-pkt.pending{background:rgba(210,153,34,.2);color:var(--yellow);animation:pulse 1s infinite}
+.pp-actions{display:flex;gap:7px;margin-top:12px}
+.pp-actions .btn{flex:1;justify-content:center;font-size:11.5px;padding:7px}
+
+/* ── CHAT ── */
+.chat-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
+.ai-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue2),var(--purple));display:flex;align-items:center;justify-content:center;font-size:15px}
+.chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:90%;word-wrap:break-word}
+.msg-u{align-self:flex-end;background:var(--blue2);color:#fff;padding:9px 13px;border-radius:13px 13px 3px 13px;font-size:12.5px;line-height:1.5}
+.msg-ai{align-self:flex-start;background:var(--bg3);border:1px solid var(--border);padding:9px 13px;border-radius:3px 13px 13px 13px;font-size:12.5px;line-height:1.65;color:var(--text)}
+.msg-ai strong{color:var(--accent)}
+.msg-ai code{background:rgba(0,0,0,.35);padding:1px 4px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--purple)}
+.msg-ai h4{font-size:11.5px;color:var(--yellow);margin:7px 0 3px;text-transform:uppercase;letter-spacing:.5px}
+.msg-ai .ai-ip-link{color:var(--accent);text-decoration:underline;font-family:'IBM Plex Mono',monospace}
+.chat-footer{padding:12px 16px;border-top:1px solid var(--border)}
+.sugs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:9px}
+.sug{padding:6px 9px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;cursor:pointer;text-align:left;transition:all var(--transition);font-family:'Sora',sans-serif;display:flex;align-items:center;gap:5px}
+.sug:hover{border-color:var(--accent);color:var(--accent)}
+.ci-row{display:flex;gap:7px}
+.ci{flex:1;padding:9px 13px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Sora',sans-serif;font-size:12.5px}
+.ci:focus{outline:none;border-color:var(--accent)}
+.cs{width:38px;height:38px;border-radius:8px;background:var(--blue2);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--transition);flex-shrink:0}
+.cs:hover{background:var(--blue)}.cs.loading{background:var(--bg3)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .7s linear infinite}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:14px}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;animation:min .2s ease}
+.modal-lg{max-width:800px}
+@keyframes min{from{opacity:0;transform:scale(.95) translateY(-8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.mhd{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,var(--bg3),var(--bg2));border-radius:14px 14px 0 0;position:sticky;top:0;z-index:1}
+.mhd h3{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.mclose{width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all var(--transition)}
+.mclose:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.mbody{padding:18px}
+
+/* ── FORM ── */
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:11.5px;font-weight:600;color:var(--text2)}
+.fi,.fsel,.fta{padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-family:'Sora',sans-serif;font-size:12.5px;transition:border-color var(--transition);width:100%}
+.fi:focus,.fsel:focus,.fta:focus{outline:none;border-color:var(--accent)}
+.fta{resize:vertical;min-height:65px}
+.factsrow{display:flex;gap:9px;padding-top:14px;border-top:1px solid var(--border);margin-top:4px}
+.factsrow .btn{flex:1;justify-content:center;padding:9px}
+.sect-lbl{font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px;margin-top:14px;display:flex;align-items:center;gap:5px}
+
+/* ── DETAIL ── */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.ds{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:13px}
+.ds h4{font-size:11.5px;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;display:flex;align-items:center;gap:5px}
+.dr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12.5px;flex-wrap:wrap;gap:4px}
+.dr .lb{color:var(--text3);font-size:11.5px;flex-shrink:0}
+.dr .vl{color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11.5px}
+.cpbtn{background:none;border:none;color:var(--text3);cursor:pointer;padding:1px 4px;border-radius:3px;font-size:10.5px;transition:color var(--transition)}
+.cpbtn:hover{color:var(--accent)}
+
+/* access grid */
+.acgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:8px;margin-bottom:16px}
+.accard{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;transition:all .2s;text-decoration:none;color:var(--text)}
+.accard:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.accard.is-link:hover{border-color:var(--green)}
+.ac-ico{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ac-v{font-size:12px;font-weight:600;color:var(--text)}
+.ac-l{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:1px;word-break:break-all}
+
+/* Windows TCP/IP Widget */
+.win-wrap{background:#f0f0f0;border:2px solid #adadad;border-radius:5px;overflow:hidden;box-shadow:2px 3px 10px rgba(0,0,0,.35);font-family:'Segoe UI',Tahoma,sans-serif;color:#000;max-width:480px;margin:0 auto}
+.win-tb{background:#0078d4;color:#fff;padding:5px 9px;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:400;user-select:none}
+.win-ctrl{display:flex;gap:3px}
+.win-cb{width:13px;height:13px;border-radius:50%;border:none;cursor:default;font-size:8px;display:flex;align-items:center;justify-content:center}
+.w-min{background:#ffd93d}.w-max{background:#6bcb77}.w-cls{background:#ff6b6b}
+.win-tabs{display:flex;border-bottom:2px solid #0078d4;background:#e5e5e5;padding-top:3px;padding-left:6px}
+.win-tab{padding:4px 13px;font-size:12px;cursor:default;border:1px solid #adadad;border-bottom:none;background:#d4d4d4;margin-right:2px;border-radius:4px 4px 0 0}
+.win-tab.act{background:#f0f0f0;border-bottom:2px solid #f0f0f0;margin-bottom:-2px;font-weight:600}
+.win-body{padding:11px 13px;font-size:12px}
+.win-desc{font-size:11px;color:#444;margin-bottom:9px;line-height:1.4;border:1px solid #c8c8c8;padding:7px;background:#fafafa}
+.win-rg{margin-bottom:7px}
+.win-r{display:flex;align-items:center;gap:5px;margin-bottom:4px;font-size:12px;cursor:default}
+.win-r input{accent-color:#0078d4}
+.win-fg{border:1px solid #c8c8c8;padding:7px 9px;margin-left:16px;margin-bottom:9px;background:#fafafa}
+.win-fr{display:flex;align-items:center;margin-bottom:5px;gap:6px}
+.win-fr:last-child{margin-bottom:0}
+.win-fr label{font-size:11px;width:175px;flex-shrink:0;color:#333}
+.win-fv{flex:1;border:1px solid #7a7a7a;background:#fff;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:3px 7px;color:#000;min-width:0;cursor:default}
+/* IP field in Windows widget is a link */
+.win-fv.ip-cell{color:#0078d4;text-decoration:underline;cursor:pointer;background:#e8f4ff}
+.win-fv.ip-cell:hover{background:#d0e8ff}
+.win-fv.filled{background:#e8f5e9;border-color:#4caf50;color:#1a6b1f;font-weight:600}
+.win-fv.empty{background:#f5f5f5;color:#999;font-style:italic}
+.win-foot{padding:7px;background:#e5e5e5;border-top:1px solid #adadad;display:flex;justify-content:flex-end;gap:5px}
+.win-btn{padding:3px 14px;border:1px solid #adadad;background:#e5e5e5;font-size:12px;cursor:pointer;border-radius:2px;font-family:'Segoe UI',Tahoma,sans-serif}
+.win-btn:hover{background:#d0d0d0}
+.win-btn.pri{background:#0078d4;color:#fff;border-color:#0078d4}
+.win-btn.pri:hover{background:#005a9e}
+
+/* changelog */
+.chlog-item{display:flex;align-items:flex-start;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.chlog-item:last-child{border-bottom:none}
+.chlog-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px}
+
+/* ── NOTIF ── */
+.notif{position:fixed;top:18px;right:18px;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 16px;display:flex;align-items:center;gap:9px;font-size:12.5px;animation:sin .3s ease;box-shadow:0 8px 30px rgba(0,0,0,.45);max-width:360px;pointer-events:none}
+@keyframes sin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+/* ── MAP CONFIG ── */
+.mcfg{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:11px;margin-bottom:11px}
+
+/* ── MORE CARD ── */
+.more-card{background:var(--bg2);border:1px dashed var(--border);border-radius:var(--radius);padding:22px;text-align:center;color:var(--text3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px}
+
+/* ── SITE LIST ── */
+.site-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);margin-bottom:5px;font-size:12.5px}
+.site-row .sc{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--accent)}
+.site-row .si{color:var(--text3);font-size:11.5px}
+
+/* ── MOBILE ── */
+@media(max-width:1100px){
+  .app{grid-template-columns:1fr;height:auto}
+  .sidebar,.chatpanel{display:none;height:auto;position:fixed;inset:0;z-index:200;width:260px;height:100vh}
+  .sidebar.open,.chatpanel.open{display:block}
+  .chatpanel.open{left:auto;right:0;width:340px}
+  .dgrid{grid-template-columns:1fr}
+  .win-wrap{max-width:100%}
+  .acgrid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+}
+
+/* ── FIREBASE SETUP SCREEN ── */
+#fb-setup{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.setup-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:520px;overflow:hidden}
+.setup-hdr{padding:22px 24px 18px;background:linear-gradient(135deg,rgba(31,111,235,.2),rgba(188,140,255,.15));border-bottom:1px solid var(--border);text-align:center}
+.setup-hdr .logo-big{font-size:42px;margin-bottom:10px}
+.setup-hdr h2{font-size:20px;font-weight:800;color:var(--accent);margin-bottom:4px}
+.setup-hdr p{font-size:12.5px;color:var(--text2);line-height:1.5}
+.setup-body{padding:22px 24px}
+.setup-step{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+.setup-step h4{font-size:12.5px;font-weight:700;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.setup-step p{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px}
+.setup-step code{background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--purple)}
+.setup-step a{color:var(--accent);text-decoration:underline}
+.setup-note{background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.3);border-radius:8px;padding:10px 13px;font-size:11.5px;color:var(--yellow);margin-bottom:16px;display:flex;gap:8px;align-items:flex-start}
+
+/* ── SYNC STATUS BAR ── */
+#sync-bar{position:fixed;bottom:0;left:0;right:0;z-index:500;padding:5px 16px;font-size:11.5px;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:background .3s;pointer-events:none}
+#sync-bar.synced{background:rgba(63,185,80,.12);border-top:1px solid rgba(63,185,80,.25)}
+#sync-bar.syncing{background:rgba(210,153,34,.12);border-top:1px solid rgba(210,153,34,.25)}
+#sync-bar.error{background:rgba(248,81,73,.12);border-top:1px solid rgba(248,81,73,.25)}
+#sync-bar.offline{background:rgba(139,148,158,.1);border-top:1px solid var(--border)}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-online{background:var(--green);animation:pulse 2s infinite}
+.sync-syncing{background:var(--yellow);animation:spin .8s linear infinite}
+.sync-error{background:var(--red)}
+.sync-offline{background:var(--text3)}
+
+/* ── ONLINE USERS ── */
+.online-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.25);border-radius:20px;padding:2px 10px;font-size:11px;color:var(--green);pointer-events:auto;cursor:default}
+
+[data-tip]{position:relative}
+[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100%+5px);left:50%;transform:translateX(-50%);background:#1c2128;color:var(--text);font-size:11px;padding:4px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;border:1px solid var(--border);z-index:50}
+[data-tip]:hover::after{opacity:1}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <div><h1>Sistema 911</h1><p>CAM-MGMT v6.0</p></div>
+  </div>
+
+  <div class="s-sect">
+    <div class="s-ttl"><i class="fas fa-chart-bar"></i>Resumen</div>
+    <div class="s-mini">
+      <div class="s-card"><div class="n" id="sb-total" style="color:var(--accent)">0</div><div class="l">Total</div></div>
+      <div class="s-card"><div class="n" id="sb-active" style="color:var(--green)">0</div><div class="l">Activas</div></div>
+      <div class="s-card"><div class="n" id="sb-inactive" style="color:var(--red)">0</div><div class="l">Inactivas</div></div>
+      <div class="s-card"><div class="n" id="sb-maint" style="color:var(--yellow)">0</div><div class="l">Manten.</div></div>
+    </div>
+  </div>
+
+  <div class="s-sect">
+    <div class="s-ttl"><i class="fas fa-filter"></i>Estado</div>
+    <button class="s-btn active" onclick="setFilter('all',this)"><i class="fas fa-globe"></i>Todas<span class="bdg bg" id="f-all">0</span></button>
+    <button class="s-btn" onclick="setFilter('active',this)"><i class="fas fa-check-circle" style="color:var(--green)"></i>Activas<span class="bdg gg" id="f-active">0</span></button>
+    <button class="s-btn" onclick="setFilter('inactive',this)"><i class="fas fa-times-circle" style="color:var(--red)"></i>Inactivas<span class="bdg rg" id="f-inactive">0</span></button>
+    <button class="s-btn" onclick="setFilter('maintenance',this)"><i class="fas fa-tools" style="color:var(--yellow)"></i>Mantenimiento<span class="bdg yg" id="f-maint">0</span></button>
+  </div>
+
+  <div class="s-sect">
+    <div class="s-ttl"><i class="fas fa-video"></i>Tipo de cámara</div>
+    <button class="s-btn" onclick="setTypeFilter('all',this)" id="tf-all" style="font-size:12px"><i class="fas fa-th"></i>Todos los tipos<span class="bdg bg" id="ft-all">0</span></button>
+    <button class="s-btn" onclick="setTypeFilter('L1',this)" id="tf-L1" style="font-size:12px"><i class="fas fa-car" style="color:var(--purple)"></i>LPR<span class="bdg pg" id="ft-L1">0</span></button>
+    <button class="s-btn" onclick="setTypeFilter('P1',this)" id="tf-P1" style="font-size:12px"><i class="fas fa-sync" style="color:var(--blue)"></i>PTZ<span class="bdg bg" id="ft-P1">0</span></button>
+    <button class="s-btn" onclick="setTypeFilter('FIJA',this)" id="tf-FIJA" style="font-size:12px"><i class="fas fa-camera" style="color:var(--green)"></i>Fija (F1/F2/F3)<span class="bdg gg" id="ft-FIJA">0</span></button>
+  </div>
+
+  <div class="s-sect">
+    <div class="s-ttl"><i class="fas fa-map-marker-alt"></i>Ubicación</div>
+    <select class="s-sel" id="filter-dept" onchange="onDeptChange(this.value)">
+      <option value="all">Todos los departamentos</option>
+    </select>
+    <select class="s-sel" id="filter-mun" onchange="onMunChange(this.value)" disabled>
+      <option value="all">Todos los municipios</option>
+    </select>
+  </div>
+
+  <div class="s-sect">
+    <div class="s-ttl"><i class="fas fa-bolt"></i>Acciones</div>
+    <button class="s-btn" onclick="openAddCamera()"><i class="fas fa-plus" style="color:var(--green)"></i>Nueva Cámara</button>
+    <button class="s-btn" onclick="openSiteModal()"><i class="fas fa-building" style="color:var(--blue)"></i>Nuevo Sitio</button>
+    <button class="s-btn" onclick="exportJSON()"><i class="fas fa-download" style="color:var(--accent)"></i>Exportar JSON</button>
+    <button class="s-btn" onclick="exportCSV()"><i class="fas fa-file-csv" style="color:var(--teal)"></i>Exportar CSV</button>
+    <button class="s-btn" onclick="importData()"><i class="fas fa-upload" style="color:var(--purple)"></i>Importar JSON</button>
+    <button class="s-btn" onclick="showDeptManager()"><i class="fas fa-map" style="color:var(--yellow)"></i>Gestionar Depto.</button>
+    <button class="s-btn" onclick="showFBConfig()" id="fb-btn"><i class="fas fa-fire" style="color:var(--red)"></i>Firebase Config</button>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main" id="main">
+  <div class="mhdr">
+    <div><h2>Dashboard 911</h2><div class="time" id="cur-time"></div></div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn btn-pri" onclick="document.getElementById('chatpanel').classList.toggle('open')"><i class="fas fa-robot"></i>Asistente IA</button>
+      <button class="btn" onclick="document.getElementById('sidebar').classList.toggle('open')" style="display:none" id="mob-menu"><i class="fas fa-bars"></i></button>
+    </div>
+  </div>
+
+  <!-- stats -->
+  <div class="stat-row">
+    <div class="stat"><div class="ico" style="background:rgba(56,139,253,.15)"><i class="fas fa-video" style="color:var(--blue)"></i></div><div><div class="nn" id="cnt-total">0</div><div class="ll">Total</div></div></div>
+    <div class="stat"><div class="ico" style="background:rgba(63,185,80,.15)"><i class="fas fa-check-circle" style="color:var(--green)"></i></div><div><div class="nn" id="cnt-active" style="color:var(--green)">0</div><div class="ll">Activas</div></div></div>
+    <div class="stat"><div class="ico" style="background:rgba(248,81,73,.15)"><i class="fas fa-exclamation-triangle" style="color:var(--red)"></i></div><div><div class="nn" id="cnt-inactive" style="color:var(--red)">0</div><div class="ll">Inactivas</div></div></div>
+    <div class="stat"><div class="ico" style="background:rgba(210,153,34,.15)"><i class="fas fa-tools" style="color:var(--yellow)"></i></div><div><div class="nn" id="cnt-maint" style="color:var(--yellow)">0</div><div class="ll">Mantenimiento</div></div></div>
+    <div class="stat"><div class="ico" style="background:rgba(188,140,255,.15)"><i class="fas fa-car" style="color:var(--purple)"></i></div><div><div class="nn" id="cnt-lpr" style="color:var(--purple)">0</div><div class="ll">LPR</div></div></div>
+    <div class="stat"><div class="ico" style="background:rgba(46,160,67,.15)"><i class="fas fa-project-diagram" style="color:var(--teal)"></i></div><div><div class="nn" id="cnt-casc" style="color:var(--teal)">0</div><div class="ll">Cascadas</div></div></div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-card">
+    <div class="chdr">
+      <div class="ctit"><i class="fas fa-map-marked-alt" style="color:var(--accent)"></i>Mapa en Tiempo Real</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="toggleMapCfg()"><i class="fas fa-cog"></i>Config</button>
+        <button class="btn btn-sm" onclick="refreshMap()"><i class="fas fa-sync-alt"></i></button>
+        <button class="btn btn-sm btn-grn" onclick="toggleFS()"><i class="fas fa-expand"></i>Fullscreen</button>
+      </div>
+    </div>
+    <div class="mcfg" id="map-cfg" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:end">
+        <div class="fg"><label>URL embed del mapa</label><input class="fi" id="map-url" value="https://www.google.com/maps/d/embed?mid=156urWy3HLJdu7wGK8gHTFX4K1oXIasE&ehbc=2E312F&noprof=1"></div>
+        <div class="fg"><label>Alto (px)</label><input class="fi" id="map-h" type="number" value="400" style="width:80px"></div>
+        <div style="display:flex;gap:5px;align-items:flex-end"><button class="btn btn-pri btn-sm" onclick="applyMap()"><i class="fas fa-check"></i></button><button class="btn btn-sm" onclick="toggleMapCfg()">✕</button></div>
+      </div>
+    </div>
+    <div id="map-cont" class="map-frame"><iframe id="main-map" src="https://www.google.com/maps/d/embed?mid=156urWy3HLJdu7wGK8gHTFX4K1oXIasE&ehbc=2E312F&noprof=1" style="height:400px" loading="lazy"></iframe></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:11px;color:var(--text3)">
+      <div style="display:flex;gap:12px">
+        <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:3px"></span>Activa</span>
+        <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:3px"></span>Inactiva</span>
+        <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--yellow);margin-right:3px"></span>Mantenimiento</span>
+      </div>
+      <span id="map-time">--:--</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="srchwrap">
+      <i class="fas fa-search"></i>
+      <input class="srchinp" id="srch" placeholder="Buscar: código, IP, sitio, municipio, modelo..." oninput="onSearch(this.value)">
+    </div>
+    <select class="fsel" id="sort-sel" onchange="onSortChange(this.value)" style="width:auto;padding:8px 11px;font-size:12.5px">
+      <option value="code">Ordenar: Código</option>
+      <option value="ip">Ordenar: IP</option>
+      <option value="status">Ordenar: Estado</option>
+      <option value="site">Ordenar: Sitio</option>
+      <option value="dept">Ordenar: Departamento</option>
+    </select>
+    <button class="btn" onclick="toggleEditMode()" id="edit-btn"><i class="fas fa-edit"></i>Editar</button>
+    <button class="btn btn-pri" onclick="openAddCamera()"><i class="fas fa-plus"></i>Nueva</button>
+  </div>
+  <div id="cam-count" style="font-size:12px;color:var(--text3);margin-bottom:11px"></div>
+  <div id="cam-grid" class="cam-grid"></div>
+  <div class="pgbar" id="pgbar"></div>
+</main>
+
+<!-- ═══ CHAT ═══ -->
+<aside class="chatpanel" id="chatpanel">
+  <div class="chat-hdr">
+    <div class="ai-av">🤖</div>
+    <div>
+      <div style="font-size:13.5px;font-weight:700">Asistente IA 911</div>
+      <div style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px"><span class="ping-dot ping-ok"></span>Sistema activo</div>
+    </div>
+    <button class="btn btn-sm" style="margin-left:auto" onclick="clearChat()" data-tip="Limpiar chat"><i class="fas fa-trash-alt"></i></button>
+    <button class="btn btn-sm" onclick="document.getElementById('chatpanel').classList.remove('open')" style="padding:5px 8px" data-tip="Cerrar"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="chat-body" id="chat-body">
+    <div class="msg msg-ai">
+      <strong>¡Bienvenido al Asistente IA 911 v6!</strong><br><br>
+      Tengo acceso completo a todos los datos del sistema. Puedo ayudarte con:<br>
+      • <strong>Búsquedas:</strong> "¿Cuántas LPR en Copán?" / "Cámaras inactivas"<br>
+      • <strong>IPs:</strong> "Info de 10.41.5.100"<br>
+      • <strong>Sitios:</strong> "Cámaras del sitio SRC-01"<br>
+      • <strong>Reportes:</strong> "Reporte completo" / "Mantenimiento pendiente"<br>
+      • <strong>Soporte:</strong> "Cómo conectarse a SRC-01"<br>
+      • <strong>Aprende:</strong> "Guarda procedimiento para OCO-02"
+    </div>
+  </div>
+  <div class="chat-footer">
+    <div class="sugs">
+      <button class="sug" onclick="askAI('¿Cuántas LPR hay en total y dónde están?')"><i class="fas fa-car"></i>Contar LPR</button>
+      <button class="sug" onclick="askAI('Generar reporte completo del sistema')"><i class="fas fa-chart-bar"></i>Reporte</button>
+      <button class="sug" onclick="askAI('Lista de cámaras inactivas que necesitan revisión urgente')"><i class="fas fa-exclamation-triangle"></i>Inactivas</button>
+      <button class="sug" onclick="askAI('Cómo configurar red TCP/IP paso a paso')"><i class="fas fa-network-wired"></i>Config TCP/IP</button>
+      <button class="sug" onclick="askAI('Cámaras en mantenimiento y cuánto tiempo llevan')"><i class="fas fa-tools"></i>Mantenimiento</button>
+      <button class="sug" onclick="askAI('Distribución de cámaras por departamento y municipio')"><i class="fas fa-map"></i>Por ubicación</button>
+    </div>
+    <div class="ci-row">
+      <input class="ci" id="chat-in" placeholder="Escribe tu consulta..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="cs" id="chat-send" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:5px;text-align:right" id="ctx-info">Contexto: 0 cámaras</div>
+  </div>
+</aside>
+</div>
+
+<!-- ═══ MODAL: CAM ═══ -->
+<div class="overlay" id="cam-modal">
+<div class="modal modal-lg">
+  <div class="mhd"><h3><i class="fas fa-video" style="color:var(--accent)"></i><span id="cam-mtit">Nueva Cámara</span></h3><button class="mclose" onclick="closeM('cam-modal')"><i class="fas fa-times"></i></button></div>
+  <div class="mbody">
+    <input type="hidden" id="cam-id">
+    <div class="sect-lbl"><i class="fas fa-id-card"></i>Identificación</div>
+    <div class="fgrid">
+      <div class="fg"><label>Código *</label><input class="fi" id="f-code" placeholder="CAM-0001"></div>
+      <div class="fg"><label>Tipo</label><select class="fsel" id="f-type"><option value="F1">F1 — Fija HD</option><option value="F2">F2 — Fija 4K</option><option value="F3">F3 — Fija 360°</option><option value="P1">P1 — PTZ</option><option value="L1">L1 — LPR</option></select></div>
+      <div class="fg"><label>Sitio *</label><input class="fi" id="f-sitio" placeholder="SRC-01"></div>
+      <div class="fg"><label>Estado</label><select class="fsel" id="f-status"><option value="active">Activa</option><option value="inactive">Inactiva</option><option value="maintenance">Mantenimiento</option></select></div>
+      <div class="fg"><label>Departamento</label><select class="fsel" id="f-dept" onchange="updMun('f-dept','f-mun')"></select></div>
+      <div class="fg"><label>Municipio</label><select class="fsel" id="f-mun"></select></div>
+      <div class="fg"><label>Cascada</label><input class="fi" id="f-cascada" placeholder="Anillo 1.1"></div>
+      <div class="fg"><label>Marca / Modelo</label><input class="fi" id="f-model" placeholder="Hikvision DS-2CD2T47G2..."></div>
+    </div>
+
+    <div class="sect-lbl"><i class="fas fa-network-wired"></i>Configuración TCP/IPv4</div>
+    <div class="fgrid">
+      <div class="fg"><label>Dirección IP</label><input class="fi" id="f-ip" placeholder="10.41.25.100" oninput="autoNet(this.value)"></div>
+      <div class="fg"><label>Máscara de subred</label><input class="fi" id="f-mask" placeholder="255.255.255.0"></div>
+      <div class="fg"><label>Puerta de enlace predeterminada</label><input class="fi" id="f-gw" placeholder="10.41.25.1"></div>
+      <div class="fg"><label>Servidor DNS preferido</label><input class="fi" id="f-dns1" placeholder="8.8.8.8"></div>
+      <div class="fg"><label>Servidor DNS alternativo</label><input class="fi" id="f-dns2" placeholder="8.8.4.4"></div>
+      <div class="fg"><label>Switch / IP admin</label><input class="fi" id="f-sw" placeholder="10.41.25.254"></div>
+      <div class="fg"><label>VLAN</label><input class="fi" id="f-vlan" placeholder="1"></div>
+      <div class="fg"><label>Puerto Switch</label><input class="fi" id="f-port" placeholder="Fa0/1"></div>
+    </div>
+
+    <div class="sect-lbl"><i class="fas fa-key"></i>Acceso & Credenciales</div>
+    <div class="fgrid">
+      <div class="fg"><label>Usuario</label><input class="fi" id="f-user" placeholder="admin"></div>
+      <div class="fg"><label>Contraseña</label><input class="fi" type="password" id="f-pass" placeholder="••••••••"><small style="font-size:10.5px;color:var(--text3);margin-top:2px">Solo para referencia interna</small></div>
+      <div class="fg"><label>Puerto HTTP</label><input class="fi" id="f-hport" placeholder="80"></div>
+      <div class="fg"><label>Protocolo</label><select class="fsel" id="f-proto"><option>ONVIF</option><option>RTSP</option><option>HTTP</option><option>HIKVISION</option><option>DAHUA</option><option>AXIS</option></select></div>
+    </div>
+
+    <div class="sect-lbl"><i class="fas fa-map-pin"></i>Coordenadas GPS</div>
+    <div class="fgrid">
+      <div class="fg"><label>Latitud</label><input class="fi" id="f-lat" placeholder="14.123456"><small style="font-size:10.5px;color:var(--text3);margin-top:2px">Decimal (ej: 14.453821)</small></div>
+      <div class="fg"><label>Longitud</label><input class="fi" id="f-lng" placeholder="-88.991234"><small style="font-size:10.5px;color:var(--text3);margin-top:2px">Decimal negativo (ej: -88.98)</small></div>
+      <div class="fg" style="grid-column:1/-1"><label>Dirección física</label><input class="fi" id="f-addr" placeholder="Calle Principal, frente al parque..."></div>
+    </div>
+
+    <div class="sect-lbl"><i class="fas fa-sticky-note"></i>Observaciones</div>
+    <textarea class="fta" id="f-notes" rows="3" placeholder="Notas técnicas, mantenimiento pendiente, accesos especiales..."></textarea>
+
+    <div class="factsrow">
+      <button class="btn btn-pri" onclick="saveCam()"><i class="fas fa-save"></i>Guardar Cámara</button>
+      <button class="btn" onclick="closeM('cam-modal')">Cancelar</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ MODAL: DETAIL ═══ -->
+<div class="overlay" id="detail-modal">
+<div class="modal modal-lg">
+  <div class="mhd"><h3><i class="fas fa-info-circle" style="color:var(--accent)"></i><span id="dtl-title">Detalles</span></h3><button class="mclose" onclick="closeM('detail-modal')"><i class="fas fa-times"></i></button></div>
+  <div class="mbody" id="dtl-body"></div>
+</div>
+</div>
+
+<!-- ═══ MODAL: SITE ═══ -->
+<div class="overlay" id="site-modal">
+<div class="modal">
+  <div class="mhd"><h3><i class="fas fa-building" style="color:var(--blue)"></i>Gestionar Sitios</h3><button class="mclose" onclick="closeM('site-modal')"><i class="fas fa-times"></i></button></div>
+  <div class="mbody">
+    <div class="sect-lbl">Nuevo sitio</div>
+    <div class="fgrid">
+      <div class="fg"><label>Código *</label><input class="fi" id="site-code" placeholder="SRC-01"></div>
+      <div class="fg"><label>Departamento</label><select class="fsel" id="site-dept" onchange="updMun('site-dept','site-mun')"></select></div>
+      <div class="fg"><label>Municipio</label><select class="fsel" id="site-mun"></select></div>
+      <div class="fg" style="grid-column:1/-1"><label>Dirección</label><textarea class="fta" id="site-addr" rows="2" placeholder="Calle, referencias..."></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-pri" onclick="saveSite()"><i class="fas fa-save"></i>Guardar Sitio</button>
+    </div>
+    <div class="sect-lbl">Sitios registrados (<span id="site-cnt">0</span>)</div>
+    <div id="site-list" style="max-height:220px;overflow-y:auto"></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ MODAL: DEPT ═══ -->
+<div class="overlay" id="dept-modal">
+<div class="modal modal-lg">
+  <div class="mhd"><h3><i class="fas fa-map" style="color:var(--yellow)"></i>Gestionar Departamentos</h3><button class="mclose" onclick="closeM('dept-modal')"><i class="fas fa-times"></i></button></div>
+  <div class="mbody">
+    <button class="btn btn-pri" style="margin-bottom:14px" onclick="addDept()"><i class="fas fa-plus"></i>Nuevo Departamento</button>
+    <div id="dept-list"></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ FIREBASE LOADING SCREEN ═══ -->
+<div id="fb-setup" style="position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="font-size:48px">🔥</div>
+  <div style="font-size:16px;font-weight:700;color:var(--accent)">Conectando a Firebase...</div>
+  <div style="font-size:13px;color:var(--text3)" id="fb-loading-msg">Iniciando sincronización</div>
+  <div style="width:200px;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden">
+    <div id="fb-progress" style="height:100%;background:var(--accent);width:0%;transition:width .4s ease;border-radius:2px"></div>
+  </div>
+</div>
+
+<!-- ═══ SYNC STATUS BAR ═══ -->
+<div id="sync-bar" class="offline" style="display:none">
+  <div style="display:flex;align-items:center;gap:7px">
+    <span class="sync-dot sync-offline" id="sync-dot"></span>
+    <span id="sync-msg">Sin conexión</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="sync-time" style="color:var(--text3)"></span>
+    <span class="online-badge" id="online-badge" style="display:none"><i class="fas fa-users"></i><span id="online-count">1</span> en línea</span>
+  </div>
+</div>
+
+<script>
+// ══════════ CONFIG ══════════
+const KEYS={CAMS:'911_cams_v8',SITES:'911_sites_v8',STRUCT:'911_struct_v8',KB:'911_kb_v8',MAP:'911_map_v8',LOG:'911_log_v8',FB:'911_fb_config'};
+const DS={key:'sk-408c3a26f959433caccb8b561b61314f',url:'https://corsproxy.io/?https://api.deepseek.com/v1/chat/completions',model:'deepseek-chat'};
+const PER_PAGE=18;
+
+// ══════════ FIREBASE CREDENTIALS — UST 911 COPÁN ══════════
+const FB_CREDS = {
+  apiKey: "AIzaSyDpVfSiWx2F52rBfEaCaEmmb0RuhBXQg3I",
+  authDomain: "ust911copan.firebaseapp.com",
+  databaseURL: "https://ust911copan-default-rtdb.firebaseio.com",
+  projectId: "ust911copan",
+  storageBucket: "ust911copan.firebasestorage.app",
+  messagingSenderId: "349479675879",
+  appId: "1:349479675879:web:f050aaabc267bcd334bf42"
+};
+const FB_PATH = 'sistema911';
+
+// ══════════ STATE ══════════
+let cameras=[],sites=[],filtered=[];
+let statusFilter='all',typeFilter='all',deptFilter='all',munFilter='all',searchQ='',sortBy='code';
+let editMode=false,aiHist=[],page=1;
+let changeLog={};
+
+// Firebase state
+let fbApp=null,fbDB=null,fbConnected=false;
+let fbListeners={};
+
+let struct={
+  departamentos:{
+    "Copán":{totalCamaras:421,municipios:{"Santa Rosa de Copán":{camaras:205,sitios:56},"La Entrada":{camaras:63,sitios:32},"Copán Ruinas":{camaras:33,sitios:12},"La Unión":{camaras:14,sitios:4},"Cucuyagua":{camaras:21,sitios:6},"San Pedro Copán":{camaras:7,sitios:3},"Corquín":{camaras:29,sitios:8},"Florida":{camaras:15,sitios:5},"El Paraíso":{camaras:14,sitios:6}}},
+    "Lempira":{totalCamaras:47,municipios:{"Gracias Lempira":{camaras:47,sitios:18}}},
+    "Ocotepeque":{totalCamaras:23,municipios:{"Ocotepeque":{camaras:23,sitios:8}}}
+  },
+  cascadas:{"CASCADA PRINCIPAL":{sitios:["OCO-02","OCO-03","OCO-04"],principal:"OCO-02"},"SITIO ÚNICO":{sitios:["OCO-06"],principal:"OCO-06"},"Anillo 1.1":{sitios:["SRC-02","SRC-03","SRC-04"],principal:"SRC-02"},"Anillo 4.1":{sitios:["SRC-01","SRC-05","SRC-06"],principal:"SRC-01"}}
+};
+let kb={conexiones:{},procedimientos:[],aprendido:[]};
+
+// ══════════ AUTO INIT — conecta automático al abrir ══════════
+document.addEventListener('DOMContentLoaded', async ()=>{
+  fbProgress(20,'Cargando Firebase SDK...');
+  try {
+    await loadFirebaseSDK();
+    fbProgress(50,'Inicializando base de datos...');
+    await initFirebase();
+    fbProgress(100,'¡Conectado!');
+    setTimeout(()=>hideSetup(), 400);
+  } catch(e) {
+    console.error('Firebase error:',e);
+    // Si falla Firebase, cargamos en modo local sin bloquear
+    document.getElementById('fb-loading-msg').textContent = '⚠️ Sin internet — cargando modo local';
+    document.getElementById('fb-loading-msg').style.color = 'var(--yellow)';
+    setTimeout(()=>{
+      hideSetup();
+      useLocalOnly();
+    }, 1500);
+  }
+});
+
+function fbProgress(pct, msg){
+  const bar=document.getElementById('fb-progress');
+  const msgEl=document.getElementById('fb-loading-msg');
+  if(bar) bar.style.width=pct+'%';
+  if(msgEl) msgEl.textContent=msg;
+}
+
+function hideSetup(){document.getElementById('fb-setup').style.display='none';}
+
+function useLocalOnly(){
+  setSyncStatus('offline','Modo local — sin sincronización');
+  loadSaved();loadCameras();loadMapSettings();
+  updateTime();setInterval(updateTime,30000);setInterval(updateMapTime,60000);
+  initDeptSelects();
+}
+
+function showFBConfig(){
+  // Reload page to reconnect
+  if(confirm('¿Reconectar con Firebase? Se recargará la página.')) location.reload();
+}
+
+async function loadFirebaseSDK(){
+  if(window.firebase) return;
+  await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+  await loadScript('https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js');
+}
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src=src;s.onload=res;s.onerror=()=>rej(new Error('No se pudo cargar SDK'));
+    document.head.appendChild(s);
+  });
+}
+
+async function initFirebase(){
+  if(firebase.apps.length) firebase.apps.forEach(a=>a.delete());
+  fbApp=firebase.initializeApp(FB_CREDS);
+  fbDB=firebase.database();
+
+  return new Promise((resolve,reject)=>{
+    let resolved=false;
+    const timeout=setTimeout(()=>{
+      if(!resolved) reject(new Error('Timeout — verifica conexión a internet'));
+    },12000);
+
+    fbDB.ref('.info/connected').on('value',snap=>{
+      if(snap.val()===true && !resolved){
+        resolved=true;
+        clearTimeout(timeout);
+        fbConnected=true;
+        fbProgress(80,'Cargando datos del sistema...');
+        setSyncStatus('synced','Conectado · Firebase UST 911 Copán');
+        startFirebaseSync();
+        resolve();
+      }
+      if(snap.val()===false && resolved){
+        fbConnected=false;
+        setSyncStatus('offline','Sin conexión — reintentando...');
+      }
+    });
+  });
+}
+
+// ══════════ FIREBASE SYNC ══════════
+const FB_PATH='sistema911'; // root path in your DB — change if needed
+
+async function startFirebaseSync(){
+  setSyncStatus('syncing','Cargando datos...');
+  initDeptSelects();
+  loadSaved(); // load local first (struct, etc.)
+
+  // Load struct from Firebase
+  fbDB.ref(FB_PATH+'/struct').once('value').then(snap=>{
+    if(snap.exists()){struct=snap.val();saveStruct();}
+    initDeptSelects();
+  });
+
+  // Load sites from Firebase
+  fbDB.ref(FB_PATH+'/sites').once('value').then(snap=>{
+    if(snap.exists()){
+      const val=snap.val();
+      sites=Array.isArray(val)?val:Object.values(val);
+    }
+  });
+
+  // Load changelog
+  fbDB.ref(FB_PATH+'/changelog').once('value').then(snap=>{
+    if(snap.exists()){changeLog=snap.val();saveLog();}
+  });
+
+  // ─── REAL-TIME CAMERA LISTENER ───
+  // Listen for individual camera changes (more efficient than whole array)
+  fbListeners.cameras=fbDB.ref(FB_PATH+'/cameras');
+  fbListeners.cameras.on('value',snap=>{
+    if(!snap.exists()){
+      // First time — push default data
+      cameras=genDefault();
+      pushAllCamerasToFB();
+    }else{
+      const val=snap.val();
+      cameras=Array.isArray(val)?val:Object.values(val).filter(Boolean);
+      applyFilters();
+      updateMapTime();
+    }
+    setSyncStatus('synced','Sincronizado · '+new Date().toLocaleTimeString('es-HN'));
+    lastSyncTime=new Date();
+  });
+
+  // ─── ONLINE PRESENCE ───
+  const sessionId='u_'+Math.random().toString(36).substr(2,6);
+  const presenceRef=fbDB.ref(FB_PATH+'/presence/'+sessionId);
+  presenceRef.set({online:true,time:Date.now(),agent:navigator.userAgent.substr(0,40)});
+  presenceRef.onDisconnect().remove();
+
+  fbDB.ref(FB_PATH+'/presence').on('value',snap=>{
+    const count=snap.exists()?Object.keys(snap.val()).length:1;
+    onlineUsers=count;
+    const badge=document.getElementById('online-badge');
+    const countEl=document.getElementById('online-count');
+    if(badge){badge.style.display=count>1?'inline-flex':'none';}
+    if(countEl)countEl.textContent=count;
+  });
+
+  loadMapSettings();
+  updateTime();setInterval(updateTime,30000);setInterval(updateMapTime,60000);
+  document.getElementById('sync-bar').style.display='flex';
+  document.getElementById('online-badge').style.display='none';
+}
+
+async function pushAllCamerasToFB(){
+  if(!fbDB||!fbConnected)return;
+  await fbDB.ref(FB_PATH+'/cameras').set(cameras);
+}
+
+// Save a single camera to Firebase (more efficient)
+async function fbSaveCam(cam){
+  if(!fbDB||!fbConnected){
+    // Fallback to localStorage
+    saveCamerasLocal();return;
+  }
+  setSyncStatus('syncing','Guardando...');
+  try{
+    const idx=cameras.findIndex(c=>c.id==cam.id);
+    await fbDB.ref(FB_PATH+'/cameras').set(cameras);
+    setSyncStatus('synced','Guardado · '+new Date().toLocaleTimeString('es-HN'));
+  }catch(e){
+    setSyncStatus('error','Error al guardar: '+e.message);
+    saveCamerasLocal();
+    notify('⚠️ Error Firebase, guardado localmente','error');
+  }
+}
+
+async function fbDeleteCam(id){
+  cameras=cameras.filter(c=>c.id!=id);
+  if(fbDB&&fbConnected){
+    try{
+      await fbDB.ref(FB_PATH+'/cameras').set(cameras);
+    }catch(e){saveCamerasLocal();}
+  }else{saveCamerasLocal();}
+}
+
+async function fbSaveStruct(){
+  if(fbDB&&fbConnected){
+    fbDB.ref(FB_PATH+'/struct').set(struct);
+  }
+  saveStruct();
+}
+
+async function fbSaveSites(){
+  if(fbDB&&fbConnected){
+    fbDB.ref(FB_PATH+'/sites').set(sites);
+  }
+  saveCamerasLocal();
+}
+
+async function fbSaveLog(){
+  if(fbDB&&fbConnected){
+    fbDB.ref(FB_PATH+'/changelog').set(changeLog);
+  }
+  saveLog();
+}
+
+// ══════════ SYNC STATUS UI ══════════
+function setSyncStatus(state, msg){
+  const bar=document.getElementById('sync-bar');
+  const dot=document.getElementById('sync-dot');
+  const msgEl=document.getElementById('sync-msg');
+  if(!bar)return;
+  bar.className='';
+  bar.classList.add(state);
+  msgEl.textContent=msg;
+  dot.className='sync-dot';
+  const dotCls={synced:'sync-online',syncing:'sync-syncing',error:'sync-error',offline:'sync-offline'};
+  dot.classList.add(dotCls[state]||'sync-offline');
+  if(state==='synced'){
+    const t=document.getElementById('sync-time');
+    if(t)t.textContent=new Date().toLocaleTimeString('es-HN');
+  }
+}
+
+// ══════════ INIT ══════════
+document.addEventListener('DOMContentLoaded',()=>{
+  // Check if we have saved Firebase config
+  const saved=localStorage.getItem(KEYS.FB);
+  if(saved){
+    try{
+      fbConfig=JSON.parse(saved);
+      document.getElementById('fb-apikey').value=fbConfig.apiKey||'';
+      document.getElementById('fb-dburl').value=fbConfig.databaseURL||'';
+      document.getElementById('fb-authdomain').value=fbConfig.authDomain||'';
+      document.getElementById('fb-projectid').value=fbConfig.projectId||'';
+      connectFirebase();
+    }catch(e){showSetup();}
+  }else{
+    showSetup();
+  }
+});
+
+function loadSaved(){
+  try{const s=localStorage.getItem(KEYS.STRUCT);if(s)struct=JSON.parse(s);}catch(e){}
+  try{const s=localStorage.getItem(KEYS.KB);if(s)kb={...kb,...JSON.parse(s)};}catch(e){}
+  try{const s=localStorage.getItem(KEYS.LOG);if(s)changeLog=JSON.parse(s);}catch(e){}
+}
+function saveStruct(){localStorage.setItem(KEYS.STRUCT,JSON.stringify(struct));}
+function saveKB(){localStorage.setItem(KEYS.KB,JSON.stringify(kb));}
+function saveLog(){try{localStorage.setItem(KEYS.LOG,JSON.stringify(changeLog));}catch(e){}}
+
+function loadCameras(){
+  // When using Firebase, cameras come from the real-time listener
+  // This is only used in local-only mode
+  const s=localStorage.getItem(KEYS.CAMS);
+  const ss=localStorage.getItem(KEYS.SITES);
+  if(s) try{cameras=JSON.parse(s);}catch(e){cameras=genDefault();saveCamerasLocal();}
+  else{cameras=genDefault();saveCamerasLocal();}
+  if(ss) try{sites=JSON.parse(ss);}catch(e){}
+  applyFilters();
+}
+function saveCamerasLocal(){
+  localStorage.setItem(KEYS.CAMS,JSON.stringify(cameras));
+  localStorage.setItem(KEYS.SITES,JSON.stringify(sites));
+}
+// Main save — routes to Firebase or local
+function saveCameras(){
+  saveCamerasLocal(); // always save locally as backup
+  if(fbDB&&fbConnected){
+    setSyncStatus('syncing','Guardando...');
+    fbDB.ref(FB_PATH+'/cameras').set(cameras)
+      .then(()=>setSyncStatus('synced','Guardado · '+new Date().toLocaleTimeString('es-HN')))
+      .catch(e=>{setSyncStatus('error','Error: '+e.message);notify('⚠️ Error al guardar en Firebase','error');});
+  }
+}
+function addLog(camId,action){
+  if(!changeLog[camId])changeLog[camId]=[];
+  changeLog[camId].push({date:new Date().toLocaleString('es-HN'),action,user:getUserLabel()});
+  if(changeLog[camId].length>30)changeLog[camId]=changeLog[camId].slice(-30);
+  fbSaveLog();
+}
+function getUserLabel(){
+  // Simple way to identify who made the change — browser fingerprint
+  return 'User-'+navigator.userAgent.substr(0,8).replace(/\W/g,'');
+}
+
+function genDefault(){
+  const data=[];let id=1;
+  Object.entries(struct.departamentos).forEach(([dept,di])=>{
+    Object.entries(di.municipios).forEach(([mun,mi])=>{
+      const num=Math.min(mi.camaras,28);
+      for(let i=1;i<=num;i++){
+        const sn=Math.ceil(i/Math.ceil(num/mi.sitios));
+        const sitio=mun.substring(0,3).toUpperCase()+'-'+String(sn).padStart(2,'0');
+        const oct3=Math.floor(Math.random()*30)+1;
+        const oct4=Math.floor(Math.random()*200)+10;
+        const ipBase=`10.41.${oct3}`;
+        const ip=`${ipBase}.${oct4}`;
+        let cascada='';
+        Object.entries(struct.cascadas).forEach(([n,c])=>{if(c.sitios.includes(sitio))cascada=n;});
+        const r=Math.random();
+        const estado=r>0.85?'inactive':r>0.80?'maintenance':'active';
+        const tipos=['F1','F2','F3','P1','L1'];
+        data.push({
+          id:id++,code:`CAM-${String(id).padStart(4,'0')}`,
+          tipo:tipos[Math.floor(Math.random()*5)],
+          departamento:dept,municipio:mun,sitio,
+          ip,mask:'255.255.255.0',
+          gateway:`${ipBase}.1`,switch:`${ipBase}.254`,
+          dns1:'8.8.8.8',dns2:'8.8.4.4',
+          vlan:'1',switchPort:`Fa0/${Math.ceil(i/2)}`,
+          user:'admin',pass:'admin123',
+          httpPort:'80',protocol:'ONVIF',model:'',
+          estado,cascada,observaciones:'',direccion:'',
+          lat:(14+Math.random()*2).toFixed(6),
+          lng:(-89+Math.random()*2).toFixed(6),
+          fechaInstalacion:new Date(2023,Math.floor(Math.random()*12),Math.floor(Math.random()*28)+1).toISOString().split('T')[0],
+          ultimaRevision:new Date(2024,Math.floor(Math.random()*12),Math.floor(Math.random()*28)+1).toISOString().split('T')[0]
+        });
+      }
+    });
+  });
+  return data;
+}
+
+// ══════════ FILTERS & SORT ══════════
+function applyFilters(){
+  let r=[...cameras];
+  if(statusFilter!=='all')r=r.filter(c=>c.estado===statusFilter);
+  if(typeFilter!=='all'){
+    if(typeFilter==='FIJA')r=r.filter(c=>['F1','F2','F3'].includes(c.tipo));
+    else r=r.filter(c=>c.tipo===typeFilter);
+  }
+  if(deptFilter!=='all')r=r.filter(c=>c.departamento===deptFilter);
+  if(munFilter!=='all')r=r.filter(c=>c.municipio===munFilter);
+  if(searchQ.trim()){
+    const q=searchQ.toLowerCase();
+    r=r.filter(c=>
+      (c.code||'').toLowerCase().includes(q)||(c.ip||'').includes(q)||
+      (c.municipio||'').toLowerCase().includes(q)||(c.departamento||'').toLowerCase().includes(q)||
+      (c.sitio||'').toLowerCase().includes(q)||(c.cascada||'').toLowerCase().includes(q)||
+      (c.tipo||'').toLowerCase().includes(q)||(c.observaciones||'').toLowerCase().includes(q)||
+      (c.model||'').toLowerCase().includes(q)||(c.direccion||'').toLowerCase().includes(q)
+    );
+  }
+  // sort
+  r.sort((a,b)=>{
+    const f={code:'code',ip:'ip',status:'estado',site:'sitio',dept:'departamento'}[sortBy]||'code';
+    return (a[f]||'').localeCompare(b[f]||'');
+  });
+  filtered=r;
+  page=1;
+  renderStats();
+  renderPage();
+}
+
+let searchTimer;
+function onSearch(v){clearTimeout(searchTimer);searchTimer=setTimeout(()=>{searchQ=v;applyFilters();},220);}
+function setFilter(s,btn){
+  statusFilter=s;
+  document.querySelectorAll('.sidebar .s-sect:nth-child(3) .s-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function setTypeFilter(t,btn){
+  typeFilter=t;
+  ['tf-all','tf-L1','tf-P1','tf-FIJA'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function onSortChange(v){sortBy=v;applyFilters();}
+function onDeptChange(v){deptFilter=v;munFilter='all';loadMunSel(v);applyFilters();}
+function onMunChange(v){munFilter=v;applyFilters();}
+
+// ══════════ STATS ══════════
+function renderStats(){
+  const t=cameras.length,a=cameras.filter(c=>c.estado==='active').length,
+    i=cameras.filter(c=>c.estado==='inactive').length,m=cameras.filter(c=>c.estado==='maintenance').length,
+    lpr=cameras.filter(c=>c.tipo==='L1').length,casc=Object.keys(struct.cascadas).length;
+  const ptz=cameras.filter(c=>c.tipo==='P1').length;
+  const fija=cameras.filter(c=>['F1','F2','F3'].includes(c.tipo)).length;
+  ['sb-total','cnt-total'].forEach(id=>txt(id,t));
+  ['sb-active','cnt-active'].forEach(id=>txt(id,a));
+  ['sb-inactive','cnt-inactive'].forEach(id=>txt(id,i));
+  ['sb-maint','cnt-maint'].forEach(id=>txt(id,m));
+  txt('cnt-lpr',lpr); txt('cnt-casc',casc);
+  txt('f-all',t); txt('f-active',a); txt('f-inactive',i); txt('f-maint',m);
+  txt('ft-all',t); txt('ft-L1',lpr); txt('ft-P1',ptz); txt('ft-FIJA',fija);
+  txt('ctx-info',`Contexto: ${t} cámaras`);
+}
+
+// ══════════ PAGINATION ══════════
+function renderPage(){
+  const start=(page-1)*PER_PAGE, end=start+PER_PAGE;
+  const slice=filtered.slice(start,end);
+  const total=filtered.length, pages=Math.ceil(total/PER_PAGE);
+  const grid=document.getElementById('cam-grid');
+  grid.innerHTML='';
+  slice.forEach(cam=>grid.appendChild(buildCard(cam)));
+  if(!slice.length) grid.innerHTML='<div class="more-card" style="grid-column:1/-1;padding:36px"><i class="fas fa-search" style="font-size:28px;opacity:.3"></i><div>Sin resultados</div></div>';
+  txt('cam-count',`Mostrando ${slice.length} de ${total} cámaras`);
+  renderPagination(page,pages,total);
+}
+
+function renderPagination(cur,total,count){
+  const bar=document.getElementById('pgbar');
+  if(total<=1){bar.innerHTML='';return;}
+  let html=`<span>${count} resultados</span>`;
+  html+=`<button class="pgbtn" onclick="goPage(${cur-1})" ${cur===1?'disabled':''} data-tip="Página anterior"><i class="fas fa-chevron-left"></i></button>`;
+  const range=[];
+  if(total<=7){for(let i=1;i<=total;i++)range.push(i);}
+  else{
+    range.push(1);
+    if(cur>3)range.push('…');
+    for(let i=Math.max(2,cur-1);i<=Math.min(total-1,cur+1);i++)range.push(i);
+    if(cur<total-2)range.push('…');
+    range.push(total);
+  }
+  range.forEach(p=>{
+    if(p==='…') html+=`<span style="color:var(--text3);padding:0 4px">…</span>`;
+    else html+=`<button class="pgbtn ${p===cur?'cur':''}" onclick="goPage(${p})">${p}</button>`;
+  });
+  html+=`<button class="pgbtn" onclick="goPage(${cur+1})" ${cur===total?'disabled':''} data-tip="Página siguiente"><i class="fas fa-chevron-right"></i></button>`;
+  bar.innerHTML=html;
+}
+function goPage(p){const max=Math.ceil(filtered.length/PER_PAGE);if(p<1||p>max)return;page=p;renderPage();document.getElementById('cam-grid').scrollIntoView({behavior:'smooth',block:'start'});}
+
+// ══════════ CARD BUILD ══════════
+function buildCard(c){
+  const card=document.createElement('div');
+  card.className=`cam-card ${c.estado}`;
+  const stMap={active:'✅ Activa',inactive:'❌ Inactiva',maintenance:'🔧 Mantenimiento'};
+  const tipTag=c.tipo==='L1'?'tag-lpr':c.tipo==='P1'?'tag-ptz':'tag-fija';
+  const tNames={F1:'Fija HD',F2:'Fija 4K',F3:'Fija 360°',P1:'PTZ',L1:'LPR'};
+  const port=c.httpPort||'80';
+  const webUrl=port==='443'?`https://${c.ip}`:`http://${c.ip}${port!=='80'?':'+port:''}`;
+  // IP como hipervínculo con ping integrado
+  const ipHtml=c.ip
+    ?`<span style="display:inline-flex;align-items:center;gap:4px">
+        <span class="ping-dot ping-unk" id="pd-${c.id}" data-tip="Clic para hacer ping a ${c.ip}" onclick="event.stopPropagation();pingCam(${c.id},this)"></span>
+        <a href="${webUrl}" target="_blank" rel="noopener" class="ip-link" title="Abrir ${webUrl} en el navegador" onclick="event.stopPropagation()">${c.ip}<i class="fas fa-external-link-alt ext"></i></a>
+      </span>`
+    :'<span style="color:var(--text3)">Sin IP</span>';
+  const upPct=c.estado==='active'?92:c.estado==='maintenance'?40:0;
+  const upClr=upPct>80?'var(--green)':upPct>50?'var(--yellow)':'var(--red)';
+  card.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px">
+      <div>
+        <div class="cam-code">${c.code}</div>
+        <span class="cam-st ${c.estado}">${stMap[c.estado]||c.estado}</span>
+      </div>
+      <span class="tag ${tipTag}" data-tip="${tNames[c.tipo]||c.tipo}">${tNames[c.tipo]||c.tipo}</span>
+    </div>
+    <div class="cam-info">
+      <span><i class="fas fa-map-marker-alt fi"></i>${c.municipio}, ${c.departamento}</span>
+      <span><i class="fas fa-network-wired fi"></i>${ipHtml}</span>
+      <span><i class="fas fa-building fi"></i>Sitio: <strong style="color:var(--text)">${c.sitio||'N/A'}</strong></span>
+      ${c.cascada?`<span><i class="fas fa-project-diagram fi"></i>${c.cascada}</span>`:''}
+      ${c.model?`<span><i class="fas fa-microchip fi"></i>${c.model}</span>`:''}
+    </div>
+    <div class="upbar"><div class="upfill" style="width:${upPct}%;background:${upClr}"></div></div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Operatividad: <strong>${upPct}%</strong></div>
+    <div class="cam-acts">
+      <button onclick="openDetail(${c.id})" data-tip="Ver detalles completos"><i class="fas fa-eye"></i>Ver</button>
+      ${c.ip?`<button onclick="event.stopPropagation();pingCamFull(${c.id})" data-tip="Hacer ping a ${c.ip}" style="color:var(--yellow)"><i class="fas fa-satellite-dish"></i>Ping</button>`:''}
+      ${c.ip?`<a href="${webUrl}" target="_blank" rel="noopener" class="web-link" title="Abrir interfaz web" onclick="event.stopPropagation()"><i class="fas fa-globe"></i>Web</a>`:''}
+      ${editMode?`<button onclick="openEdit(${c.id})"><i class="fas fa-edit"></i></button>`:''}
+      ${editMode?`<button onclick="delCam(${c.id})" style="color:var(--red)"><i class="fas fa-trash"></i></button>`:''}
+    </div>`;
+  return card;
+}
+
+// ══════════ DEPT SELECTS ══════════
+function initDeptSelects(){
+  ['filter-dept','f-dept','site-dept'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cur=el.value;
+    if(id==='filter-dept')el.innerHTML='<option value="all">Todos los departamentos</option>';
+    else el.innerHTML='';
+    Object.keys(struct.departamentos).forEach(d=>{
+      const o=document.createElement('option');o.value=d;o.textContent=d;
+      if(d===cur)o.selected=true;el.appendChild(o);
+    });
+  });
+  updMun('f-dept','f-mun'); updMun('site-dept','site-mun');
+}
+function loadMunSel(dept){
+  const el=document.getElementById('filter-mun');
+  el.innerHTML='<option value="all">Todos los municipios</option>';
+  if(dept&&dept!=='all'){
+    el.disabled=false;
+    Object.keys(struct.departamentos[dept]?.municipios||{}).forEach(m=>{
+      const o=document.createElement('option');o.value=m;o.textContent=m;el.appendChild(o);
+    });
+  }else{el.disabled=true;el.value='all';}
+}
+function updMun(dId,mId,sel=''){
+  const dept=document.getElementById(dId)?.value;
+  const el=document.getElementById(mId);if(!el)return;
+  el.innerHTML='';
+  if(dept&&struct.departamentos[dept]){
+    Object.keys(struct.departamentos[dept].municipios).forEach(m=>{
+      const o=document.createElement('option');o.value=m;o.textContent=m;
+      if(m===sel)o.selected=true;el.appendChild(o);
+    });
+  }
+}
+
+// ══════════ AUTO-FILL NETWORK ══════════
+function autoNet(ip){
+  if(!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip))return;
+  const base=ip.substring(0,ip.lastIndexOf('.'));
+  const gw=document.getElementById('f-gw'),sw=document.getElementById('f-sw');
+  if(gw&&!gw.value)gw.value=base+'.1';
+  if(sw&&!sw.value)sw.value=base+'.254';
+  if(!document.getElementById('f-mask').value)document.getElementById('f-mask').value='255.255.255.0';
+  if(!document.getElementById('f-dns1').value)document.getElementById('f-dns1').value='8.8.8.8';
+  if(!document.getElementById('f-dns2').value)document.getElementById('f-dns2').value='8.8.4.4';
+}
+
+// ══════════ CAMERA CRUD ══════════
+function openAddCamera(){
+  txt('cam-mtit','Nueva Cámara');
+  document.getElementById('cam-id').value='';
+  const clr=['f-code','f-ip','f-mask','f-gw','f-dns1','f-dns2','f-sw','f-vlan','f-port','f-user','f-pass','f-hport','f-cascada','f-notes','f-sitio','f-model','f-lat','f-lng','f-addr'];
+  clr.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-mask').value='255.255.255.0';
+  document.getElementById('f-dns1').value='8.8.8.8';
+  document.getElementById('f-dns2').value='8.8.4.4';
+  document.getElementById('f-vlan').value='1';
+  document.getElementById('f-hport').value='80';
+  document.getElementById('f-user').value='admin';
+  initDeptSelects();openM('cam-modal');
+}
+function openEdit(id){
+  const c=cameras.find(x=>x.id==id);if(!c)return;
+  txt('cam-mtit','Editar Cámara');
+  document.getElementById('cam-id').value=c.id;
+  const fields={'f-code':c.code,'f-sitio':c.sitio,'f-ip':c.ip,'f-mask':c.mask||'255.255.255.0',
+    'f-gw':c.gateway,'f-dns1':c.dns1||'8.8.8.8','f-dns2':c.dns2||'8.8.4.4',
+    'f-sw':c.switch,'f-vlan':c.vlan||'1','f-port':c.switchPort||'',
+    'f-user':c.user||'admin','f-pass':c.pass||'','f-hport':c.httpPort||'80',
+    'f-cascada':c.cascada||'','f-notes':c.observaciones||'','f-model':c.model||'',
+    'f-lat':c.lat||'','f-lng':c.lng||'','f-addr':c.direccion||''};
+  Object.entries(fields).forEach(([k,v])=>{const el=document.getElementById(k);if(el)el.value=v||'';});
+  document.getElementById('f-type').value=c.tipo;
+  document.getElementById('f-status').value=c.estado;
+  document.getElementById('f-proto').value=c.protocol||'ONVIF';
+  initDeptSelects();
+  document.getElementById('f-dept').value=c.departamento;
+  updMun('f-dept','f-mun',c.municipio);
+  openM('cam-modal');
+}
+function saveCam(){
+  const id=document.getElementById('cam-id').value;
+  const code=document.getElementById('f-code').value.trim();
+  const sitio=document.getElementById('f-sitio').value.trim();
+  if(!code||!sitio){notify('⚠️ Código y Sitio son obligatorios','error');return;}
+  const ip=document.getElementById('f-ip').value.trim();
+  if(ip&&!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)){notify('⚠️ Formato de IP inválido','error');return;}
+  const data={
+    code,tipo:document.getElementById('f-type').value,
+    departamento:document.getElementById('f-dept').value,
+    municipio:document.getElementById('f-mun').value,
+    sitio:sitio.toUpperCase(),ip,
+    mask:document.getElementById('f-mask').value.trim()||'255.255.255.0',
+    gateway:document.getElementById('f-gw').value.trim(),
+    dns1:document.getElementById('f-dns1').value.trim()||'8.8.8.8',
+    dns2:document.getElementById('f-dns2').value.trim()||'8.8.4.4',
+    switch:document.getElementById('f-sw').value.trim(),
+    vlan:document.getElementById('f-vlan').value.trim()||'1',
+    switchPort:document.getElementById('f-port').value.trim(),
+    user:document.getElementById('f-user').value.trim()||'admin',
+    pass:document.getElementById('f-pass').value.trim(),
+    httpPort:document.getElementById('f-hport').value.trim()||'80',
+    protocol:document.getElementById('f-proto').value,
+    model:document.getElementById('f-model').value.trim(),
+    cascada:document.getElementById('f-cascada').value.trim(),
+    observaciones:document.getElementById('f-notes').value.trim(),
+    estado:document.getElementById('f-status').value,
+    lat:document.getElementById('f-lat').value.trim(),
+    lng:document.getElementById('f-lng').value.trim(),
+    direccion:document.getElementById('f-addr').value.trim(),
+    ultimaActualizacion:new Date().toISOString().split('T')[0]
+  };
+  if(id){
+    const idx=cameras.findIndex(c=>c.id==id);
+    if(idx!==-1){cameras[idx]={...cameras[idx],...data};addLog(id,'Cámara actualizada');}
+    notify('✅ Cámara actualizada');
+  }else{
+    data.id=cameras.length?Math.max(...cameras.map(c=>c.id))+1:1000;
+    data.fechaInstalacion=new Date().toISOString().split('T')[0];
+    cameras.push(data);addLog(data.id,'Cámara creada');
+    notify('✅ Cámara creada');
+  }
+  saveCameras();applyFilters();closeM('cam-modal');
+}
+function delCam(id){
+  if(!confirm('¿Eliminar esta cámara? Acción irreversible.'))return;
+  cameras=cameras.filter(c=>c.id!=id);
+  saveCameras(); // routes to Firebase if connected
+  applyFilters();closeM('detail-modal');
+  notify('🗑️ Cámara eliminada');
+}
+function toggleEditMode(){
+  editMode=!editMode;
+  const btn=document.getElementById('edit-btn');
+  btn.innerHTML=editMode?'<i class="fas fa-check"></i>Terminar':'<i class="fas fa-edit"></i>Editar';
+  btn.className=editMode?'btn btn-grn':'btn';
+  renderPage();
+}
+
+// ══════════ DETAIL MODAL ══════════
+function openDetail(id){
+  const c=cameras.find(x=>x.id==id);if(!c)return;
+  txt('dtl-title',c.code);
+  const stMap={active:'<span style="color:var(--green)">✅ Activa</span>',inactive:'<span style="color:var(--red)">❌ Inactiva</span>',maintenance:'<span style="color:var(--yellow)">🔧 Mantenimiento</span>'};
+  const tFull={F1:'Fija HD',F2:'Fija 4K',F3:'Fija 360°',P1:'PTZ Motorizada',L1:'LPR — Reconocimiento de Placas'};
+  const port=c.httpPort||'80';
+  const webUrl=port==='443'?`https://${c.ip}`:`http://${c.ip}${port!=='80'?':'+port:''}`;
+  const webHttps=`https://${c.ip}`;
+  const rtsp=`rtsp://${c.user||'admin'}:${c.pass||'admin123'}@${c.ip}/stream`;
+  const ssh=`ssh ${c.user||'admin'}@${c.ip}`;
+  const telnet=`telnet ${c.switch}`;
+  const ping=`ping ${c.ip}`;
+  const log=changeLog[c.id]||[];
+  const logHtml=log.length
+    ?log.slice(-6).reverse().map(e=>`<div class="chlog-item"><span class="chlog-dot"></span><div style="font-size:12px"><span style="color:var(--text3)">${e.date}</span> — ${escH(e.action)}</div></div>`).join('')
+    :'<div style="color:var(--text3);font-size:12px">Sin historial registrado.</div>';
+
+  document.getElementById('dtl-body').innerHTML=`
+    <div class="dgrid">
+      <div class="ds">
+        <h4><i class="fas fa-info-circle"></i>Identificación</h4>
+        ${dr('Código',c.code)}
+        ${dr('Tipo',tFull[c.tipo]||c.tipo)}
+        ${dr('Sitio',c.sitio||'N/A')}
+        ${dr('Cascada',c.cascada||'—')}
+        <div class="dr"><span class="lb">Estado</span><span>${stMap[c.estado]||c.estado}</span></div>
+        ${dr('Municipio',c.municipio)}
+        ${dr('Departamento',c.departamento)}
+        ${dr('Modelo',c.model||'—')}
+        ${dr('Instalación',c.fechaInstalacion||'—')}
+        ${dr('Actualización',c.ultimaActualizacion||c.ultimaRevision||'—')}
+        ${c.lat?dr('GPS',`${c.lat}, ${c.lng}`):''}
+        ${c.direccion?dr('Dirección',c.direccion):''}
+      </div>
+      <div class="ds">
+        <h4><i class="fas fa-plug"></i>Acceso & Conexión</h4>
+        ${drLink('Web HTTP',webUrl,webUrl)}
+        ${drLink('Web HTTPS',webHttps,webHttps)}
+        ${drCopy('SSH',ssh)}
+        ${drCopy('Telnet Switch',telnet)}
+        ${drCopy('Ping',ping)}
+        ${drCopy('RTSP',rtsp)}
+        <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--border)">
+          ${dr('Usuario',c.user||'admin')}
+          ${dr('Puerto HTTP',c.httpPort||'80')}
+          ${dr('Protocolo',c.protocol||'ONVIF')}
+          ${dr('VLAN',c.vlan||'1')}
+          ${dr('Puerto Switch',c.switchPort||'—')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Acceso Rápido — links clickeables -->
+    <div style="margin-bottom:16px">
+      <div class="sect-lbl" style="margin-top:0"><i class="fas fa-bolt" style="color:var(--yellow)"></i>Acceso Rápido — Haz clic para abrir o copiar</div>
+      <div class="acgrid">
+        <a href="${webUrl}" target="_blank" rel="noopener" class="accard is-link" title="Abrir interfaz web HTTP de la cámara">
+          <div class="ac-ico" style="background:rgba(63,185,80,.15)"><i class="fas fa-globe" style="color:var(--green)"></i></div>
+          <div><div class="ac-v">HTTP Web UI</div><div class="ac-l">${webUrl}</div></div>
+        </a>
+        <a href="${webHttps}" target="_blank" rel="noopener" class="accard is-link" title="Abrir vía HTTPS">
+          <div class="ac-ico" style="background:rgba(56,139,253,.15)"><i class="fas fa-lock" style="color:var(--blue)"></i></div>
+          <div><div class="ac-v">HTTPS</div><div class="ac-l">${webHttps}</div></div>
+        </a>
+        <div class="accard" onclick="cp('${ssh}');notify('📋 SSH copiado')" title="Copiar comando SSH">
+          <div class="ac-ico" style="background:rgba(188,140,255,.15)"><i class="fas fa-terminal" style="color:var(--purple)"></i></div>
+          <div><div class="ac-v">SSH</div><div class="ac-l">${ssh}</div></div>
+        </div>
+        <div class="accard" onclick="closeM('detail-modal');pingCamFull(${c.id})" title="Ejecutar ping HTTP hacia la cámara" style="border-color:rgba(210,153,34,.3)">
+          <div class="ac-ico" style="background:rgba(210,153,34,.15)"><i class="fas fa-satellite-dish" style="color:var(--yellow)"></i></div>
+          <div><div class="ac-v" style="color:var(--yellow)">Ping HTTP</div><div class="ac-l">Probar conectividad</div></div>
+        </div>
+        <div class="accard" onclick="cp('${rtsp}');notify('📋 URL RTSP copiada')" title="Copiar URL RTSP para VLC/NVR">
+          <div class="ac-ico" style="background:rgba(248,81,73,.15)"><i class="fas fa-video" style="color:var(--red)"></i></div>
+          <div><div class="ac-v">RTSP Stream</div><div class="ac-l">Copiar para VLC/NVR</div></div>
+        </div>
+        <div class="accard" onclick="cp('${telnet}');notify('📋 Telnet copiado')" title="Copiar acceso telnet al switch">
+          <div class="ac-ico" style="background:rgba(46,160,67,.15)"><i class="fas fa-network-wired" style="color:var(--teal)"></i></div>
+          <div><div class="ac-v">Switch Admin</div><div class="ac-l">${c.switch||'N/A'}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WINDOWS TCP/IPv4 -->
+    <div style="margin-bottom:16px">
+      <div class="sect-lbl" style="margin-top:0"><i class="fas fa-network-wired" style="color:var(--accent)"></i>Propiedades TCP/IPv4 — Adaptador de Red</div>
+      ${buildWinAdapter(c)}
+    </div>
+
+    ${c.observaciones?`<div class="ds" style="margin-bottom:16px"><h4><i class="fas fa-sticky-note"></i>Observaciones</h4><p style="font-size:13px;line-height:1.65;color:var(--text2)">${escH(c.observaciones)}</p></div>`:''}
+
+    <div class="ds" style="margin-bottom:16px">
+      <h4><i class="fas fa-history"></i>Historial de Cambios</h4>
+      ${logHtml}
+    </div>
+
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn btn-pri" onclick="closeM('detail-modal');openEdit(${c.id})"><i class="fas fa-edit"></i>Editar</button>
+      <a href="${webUrl}" target="_blank" rel="noopener" class="btn btn-grn"><i class="fas fa-globe"></i>Abrir Web</a>
+      <button class="btn" onclick="askAI('Como conectarse al sitio ${c.sitio||c.code} paso a paso con IP ${c.ip}')"><i class="fas fa-robot"></i>Guía IA</button>
+      <button class="btn btn-red" onclick="delCam(${c.id})"><i class="fas fa-trash"></i>Eliminar</button>
+    </div>`;
+  openM('detail-modal');
+}
+
+function dr(lbl,val){return`<div class="dr"><span class="lb">${lbl}</span><span class="vl">${escH(String(val||'—'))}</span></div>`;}
+function drCopy(lbl,val){return`<div class="dr"><span class="lb">${lbl}</span><div style="display:flex;align-items:center;gap:3px"><span class="vl" style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${val}">${val}</span><button class="cpbtn" onclick="cp('${val.replace(/'/g,"\\'")}')"><i class="fas fa-copy"></i></button></div></div>`;}
+function drLink(lbl,url,display){return`<div class="dr"><span class="lb">${lbl}</span><div style="display:flex;align-items:center;gap:3px"><a href="${url}" target="_blank" rel="noopener" class="ip-link" style="font-size:11px" title="Abrir ${url}">${display}<i class="fas fa-external-link-alt ext"></i></a><button class="cpbtn" onclick="cp('${url}')"><i class="fas fa-copy"></i></button></div></div>`;}
+
+// ══════════ WINDOWS ADAPTER UI ══════════
+function buildWinAdapter(c){
+  const hasIP=c.ip&&/^\d/.test(c.ip);
+  const port=c.httpPort||'80';
+  const webUrl=port==='443'?`https://${c.ip}`:`http://${c.ip}${port!=='80'?':'+port:''}`;
+  const fv=(val,lbl,isIp=false)=>{
+    const filled=val&&val.trim()&&val!=='—';
+    if(isIp&&filled){
+      // IP field is clickable hyperlink inside the Windows widget
+      return`<div class="win-fr"><label>${lbl}</label><div class="win-fv ip-cell" onclick="window.open('${webUrl}','_blank')" title="Clic para abrir ${webUrl} en el navegador">${val}</div></div>`;
+    }
+    return`<div class="win-fr"><label>${lbl}</label><input class="win-fv ${filled?'filled':'empty'}" value="${filled?val:''}" placeholder="${filled?'':'. . .'}" readonly></div>`;
+  };
+  return`<div class="win-wrap">
+    <div class="win-tb">
+      <span>Propiedades de Habilitar el protocolo de Internet versión 4 (TCP/IP...</span>
+      <div class="win-ctrl"><button class="win-cb w-min">—</button><button class="win-cb w-max">□</button><button class="win-cb w-cls" onclick="closeM('detail-modal')">✕</button></div>
+    </div>
+    <div class="win-tabs"><div class="win-tab act">General</div><div class="win-tab">Configuración alternativa</div></div>
+    <div class="win-body">
+      <div class="win-desc">Puede hacer que la configuración IP se asigne automáticamente si la red admite esta funcionalidad. De lo contrario, deberá consultar con el administrador de red cuál es la configuración IP apropiada.</div>
+      <div class="win-rg">
+        <label class="win-r"><input type="radio" name="ipm_${c.id}" ${hasIP?'':'checked'} readonly> Obtener una dirección IP automáticamente</label>
+        <label class="win-r"><input type="radio" name="ipm_${c.id}" ${hasIP?'checked':''} readonly> Usar la siguiente dirección IP:</label>
+      </div>
+      <div class="win-fg">
+        ${fv(c.ip,'Dirección IP:',true)}
+        ${fv(c.mask||'255.255.255.0','Máscara de subred:')}
+        ${fv(c.gateway,'Puerta de enlace predeterminada:')}
+      </div>
+      <div class="win-rg">
+        <label class="win-r"><input type="radio" name="dnm_${c.id}" ${c.dns1?'':'checked'} readonly> Obtener la dirección del servidor DNS automáticamente</label>
+        <label class="win-r"><input type="radio" name="dnm_${c.id}" ${c.dns1?'checked':''} readonly> Usar las siguientes direcciones de servidor DNS:</label>
+      </div>
+      <div class="win-fg">
+        ${fv(c.dns1,'Servidor DNS preferido:')}
+        ${fv(c.dns2,'Servidor DNS alternativo:')}
+      </div>
+      <div style="margin-top:7px"><label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" ${hasIP?'checked':''} style="accent-color:#0078d4" readonly> Validar configuración al salir</label></div>
+    </div>
+    <div class="win-foot">
+      <button class="win-btn" onclick="closeM('detail-modal');openEdit(${c.id})">Configurar...</button>
+      <button class="win-btn pri" onclick="closeM('detail-modal')">Aceptar</button>
+      <button class="win-btn" onclick="closeM('detail-modal')">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+// ══════════ SITES ══════════
+function openSiteModal(){
+  initDeptSelects();updMun('site-dept','site-mun');
+  renderSiteList();openM('site-modal');
+}
+function renderSiteList(){
+  const list=document.getElementById('site-list');
+  txt('site-cnt',sites.length);
+  if(!sites.length){list.innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:12px">Sin sitios registrados aún</div>';return;}
+  list.innerHTML=sites.map(s=>`
+    <div class="site-row">
+      <div><span class="sc">${s.code}</span> <span class="si">— ${s.municipio}, ${s.departamento}</span></div>
+      <button class="btn btn-sm btn-red" style="padding:3px 8px" onclick="deleteSite(${s.id})"><i class="fas fa-trash"></i></button>
+    </div>`).join('');
+}
+function saveSite(){
+  const code=document.getElementById('site-code').value.trim();
+  if(!code){notify('⚠️ Código requerido','error');return;}
+  if(sites.some(s=>s.code===code)){notify('⚠️ Este código ya existe','error');return;}
+  sites.push({id:Date.now(),code,departamento:document.getElementById('site-dept').value,municipio:document.getElementById('site-mun').value,direccion:document.getElementById('site-addr').value.trim()});
+  fbSaveSites();renderSiteList();document.getElementById('site-code').value='';
+  document.getElementById('site-addr').value='';
+  notify('✅ Sitio guardado');
+}
+function deleteSite(id){
+  if(!confirm('¿Eliminar este sitio?'))return;
+  sites=sites.filter(s=>s.id!==id);fbSaveSites();renderSiteList();notify('🗑️ Sitio eliminado');
+}
+
+// ══════════ DEPT MANAGER ══════════
+function showDeptManager(){renderDeptList();openM('dept-modal');}
+function renderDeptList(){
+  const el=document.getElementById('dept-list');el.innerHTML='';
+  Object.entries(struct.departamentos).forEach(([d,dd])=>{
+    const card=document.createElement('div');
+    card.className='ds';card.style.marginBottom='11px';
+    card.innerHTML=`<h4 style="display:flex;justify-content:space-between;align-items:center">
+      <span><i class="fas fa-map-marked-alt"></i>${d}</span>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-sm" onclick="renDept('${d}')"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm btn-red" onclick="rmDept('${d}')"><i class="fas fa-trash"></i></button>
+      </div></h4>
+    <div style="font-size:11.5px;color:var(--text3);margin-bottom:9px">${Object.keys(dd.municipios).length} municipios · ${dd.totalCamaras} cámaras</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px">
+      ${Object.entries(dd.municipios).map(([m,md])=>`<span style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;display:flex;align-items:center;gap:5px">
+        ${m} <span style="color:var(--text3)">${md.camaras}c</span>
+        <button onclick="editMun('${d}','${m}')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px"><i class="fas fa-edit"></i></button>
+        <button onclick="rmMun('${d}','${m}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:10px"><i class="fas fa-times"></i></button>
+      </span>`).join('')}
+    </div>
+    <button class="btn btn-grn btn-sm" onclick="addMun('${d}')"><i class="fas fa-plus"></i>Agregar Municipio</button>`;
+    el.appendChild(card);
+  });
+}
+function addDept(){const n=prompt('Nombre del departamento:');if(!n)return;if(struct.departamentos[n]){notify('⚠️ Ya existe','error');return;}struct.departamentos[n]={totalCamaras:0,municipios:{}};fbSaveStruct();initDeptSelects();renderDeptList();notify('✅ Departamento creado');}
+function renDept(old){const n=prompt('Nuevo nombre:',old);if(!n||n===old)return;struct.departamentos[n]=struct.departamentos[old];delete struct.departamentos[old];cameras.forEach(c=>{if(c.departamento===old)c.departamento=n;});fbSaveStruct();saveCameras();initDeptSelects();renderDeptList();applyFilters();notify('✅ Renombrado');}
+function rmDept(d){if(!confirm(`¿Eliminar "${d}"?`))return;delete struct.departamentos[d];fbSaveStruct();initDeptSelects();renderDeptList();notify('🗑️ Eliminado');}
+function addMun(dept){const m=prompt('Nombre:');if(!m)return;const c=parseInt(prompt('Cámaras:','0'))||0;const s=parseInt(prompt('Sitios:','0'))||0;struct.departamentos[dept].municipios[m]={camaras:c,sitios:s};recalc(dept);fbSaveStruct();initDeptSelects();renderDeptList();notify('✅ Municipio agregado');}
+function editMun(dept,mun){const cur=struct.departamentos[dept].municipios[mun];const nn=prompt('Nombre:',mun)||mun;const c=parseInt(prompt('Cámaras:',cur.camaras))||0;const s=parseInt(prompt('Sitios:',cur.sitios))||0;if(nn!==mun){delete struct.departamentos[dept].municipios[mun];cameras.forEach(cam=>{if(cam.departamento===dept&&cam.municipio===mun)cam.municipio=nn;});}struct.departamentos[dept].municipios[nn]={camaras:c,sitios:s};recalc(dept);fbSaveStruct();saveCameras();initDeptSelects();renderDeptList();applyFilters();notify('✅ Actualizado');}
+function rmMun(dept,mun){if(!confirm(`¿Eliminar "${mun}"?`))return;delete struct.departamentos[dept].municipios[mun];recalc(dept);fbSaveStruct();initDeptSelects();renderDeptList();notify('🗑️ Eliminado');}
+function recalc(dept){struct.departamentos[dept].totalCamaras=Object.values(struct.departamentos[dept].municipios).reduce((s,m)=>s+m.camaras,0);}
+
+// ══════════ MAP ══════════
+function toggleMapCfg(){const p=document.getElementById('map-cfg');p.style.display=p.style.display==='none'?'block':'none';}
+function applyMap(){const url=document.getElementById('map-url').value;const h=document.getElementById('map-h').value;const map=document.getElementById('main-map');map.src=url;map.style.height=h+'px';localStorage.setItem(KEYS.MAP,JSON.stringify({url,h}));toggleMapCfg();notify('✅ Mapa actualizado');}
+function refreshMap(){const map=document.getElementById('main-map');const s=map.src;map.src='';setTimeout(()=>{map.src=s;updateMapTime();},300);notify('🔄 Mapa recargado');}
+function toggleFS(){const el=document.getElementById('map-cont');if(!document.fullscreenElement)el.requestFullscreen?.();else document.exitFullscreen?.();}
+function loadMapSettings(){const s=localStorage.getItem(KEYS.MAP);if(s)try{const{url,h}=JSON.parse(s);document.getElementById('map-url').value=url;document.getElementById('map-h').value=h;document.getElementById('main-map').src=url;document.getElementById('main-map').style.height=h+'px';}catch(e){}updateMapTime();}
+function updateMapTime(){const el=document.getElementById('map-time');if(el)el.textContent='Actualizado '+new Date().toLocaleTimeString('es-HN');}
+
+// ══════════ AI CHAT ══════════
+function askAI(q){document.getElementById('chat-in').value=q;document.getElementById('chatpanel').classList.add('open');sendChat();}
+
+function sendChat(){
+  const input=document.getElementById('chat-in');
+  const q=input.value.trim();if(!q)return;
+  input.value='';addMsg(q,'u');setSend(true);
+  const local=localAns(q);
+  if(local){setTimeout(()=>{addMsg(local,'ai');setSend(false);},500);return;}
+  const sys=`Eres el asistente técnico del Sistema 911 de Gestión de Cámaras de Honduras. Responde en español, de forma técnica y concisa.
+Sistema actual: ${cameras.length} cámaras totales, ${cameras.filter(c=>c.estado==='active').length} activas, ${cameras.filter(c=>c.estado==='inactive').length} inactivas, ${cameras.filter(c=>c.tipo==='L1').length} LPR.
+Departamentos: ${Object.keys(struct.departamentos).join(', ')}.
+LPR por municipio: ${JSON.stringify((() => {const m={};cameras.filter(c=>c.tipo==='L1').forEach(c=>{if(!m[c.municipio])m[c.municipio]=0;m[c.municipio]++;});return m;})())}.
+Sitios conocidos: ${[...new Set(cameras.map(c=>c.sitio))].slice(0,30).join(', ')}.`;
+  fetch(DS.url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+DS.key},body:JSON.stringify({model:DS.model,messages:[{role:'system',content:sys},...aiHist.slice(-8),{role:'user',content:q}],max_tokens:700,temperature:0.55})})
+  .then(r=>r.json()).then(d=>{const r=d.choices?.[0]?.message?.content||'Sin respuesta.';addMsg(r,'ai');aiHist.push({role:'user',content:q},{role:'assistant',content:r});if(aiHist.length>20)aiHist=aiHist.slice(-20);})
+  .catch(()=>addMsg('⚠️ Sin conexión con la IA. Respuesta local disponible — prueba con consultas de conteo, IP o reporte.','ai'))
+  .finally(()=>setSend(false));
+}
+
+function localAns(q){
+  const ql=q.toLowerCase();
+  // LPR
+  if(/cuántas.*(lpr|placas)|lpr.*(total|cuántas)/i.test(q)){
+    let cams=cameras.filter(c=>c.tipo==='L1'),loc='Sistema completo';
+    Object.keys(struct.departamentos).forEach(d=>{
+      if(ql.includes(d.toLowerCase())){cams=cams.filter(c=>c.departamento===d);loc=d;
+        Object.keys(struct.departamentos[d].municipios).forEach(m=>{if(ql.includes(m.toLowerCase())){cams=cams.filter(c=>c.municipio===m);loc=m+', '+d;}});
+      }
+    });
+    const a=cams.filter(c=>c.estado==='active').length;
+    return `📸 **LPR en ${loc}**\n\nTotal: **${cams.length}** cámaras LPR\n✅ Activas: ${a}\n❌ Inactivas: ${cams.length-a}\n\n${cams.slice(0,8).map(c=>`• \`${c.code}\` — ${c.sitio} — \`${c.ip}\` — ${c.estado==='active'?'✅':'❌'}`).join('\n')}${cams.length>8?`\n\n*...y ${cams.length-8} más*`:''}`;
+  }
+  // count cameras
+  if(/cuántas.*(cámaras|camaras)/i.test(q)){
+    let cams=cameras,loc='Sistema completo';
+    Object.keys(struct.departamentos).forEach(d=>{
+      if(ql.includes(d.toLowerCase())){cams=cams.filter(c=>c.departamento===d);loc=d;
+        Object.keys(struct.departamentos[d].municipios).forEach(m=>{if(ql.includes(m.toLowerCase())){cams=cams.filter(c=>c.municipio===m);loc=m+', '+d;}});
+      }
+    });
+    const a=cams.filter(c=>c.estado==='active').length,i=cams.filter(c=>c.estado==='inactive').length,m=cams.filter(c=>c.estado==='maintenance').length;
+    return `📊 **Cámaras en ${loc}**\n\nTotal: **${cams.length}**\n✅ Activas: ${a} (${cams.length?Math.round(a/cams.length*100):0}%)\n❌ Inactivas: ${i}\n🔧 Mantenimiento: ${m}`;
+  }
+  // IP lookup
+  const ipM=q.match(/(\d{1,3}\.){3}\d{1,3}/);
+  if(ipM){
+    const cam=cameras.find(c=>c.ip===ipM[0]);
+    if(cam){const p=cam.httpPort||'80';const wu=p==='443'?`https://${cam.ip}`:`http://${cam.ip}${p!=='80'?':'+p:''}`;return `🔍 **IP \`${ipM[0]}\`**\n\nCódigo: ${cam.code}\nSitio: ${cam.sitio}\nTipo: ${cam.tipo}\nEstado: ${cam.estado==='active'?'✅ Activa':cam.estado==='inactive'?'❌ Inactiva':'🔧 Mantenimiento'}\nUbicación: ${cam.municipio}, ${cam.departamento}\nGateway: \`${cam.gateway}\`\nSwitch: \`${cam.switch}\`\nMáscara: \`${cam.mask||'255.255.255.0'}\`\nWeb: ${wu}`;}
+    return `❌ No encontré cámara con IP \`${ipM[0]}\`. Puede no estar registrada.`;
+  }
+  // inactivas
+  if(/inactiv/i.test(q)){const inact=cameras.filter(c=>c.estado==='inactive');return `⚠️ **Cámaras Inactivas: ${inact.length}**\n\n${inact.slice(0,12).map(c=>`• \`${c.code}\` — ${c.sitio||'—'} — \`${c.ip||'—'}\` — ${c.municipio}`).join('\n')}${inact.length>12?`\n\n*...y ${inact.length-12} más*`:''}`;  }
+  // mantenimiento
+  if(/mantenimiento|manten/i.test(q)){const ma=cameras.filter(c=>c.estado==='maintenance');return `🔧 **En Mantenimiento: ${ma.length}**\n\n${ma.map(c=>`• \`${c.code}\` — ${c.sitio||'—'} — ${c.municipio}`).join('\n')||'Ninguna en mantenimiento.'}`;  }
+  // sitio
+  const sM=q.match(/sitio\s+([A-Z]{2,4}-\d{2,3})/i);
+  if(sM){const sit=sM[1].toUpperCase();const cams=cameras.filter(c=>c.sitio===sit);if(cams.length)return `🏢 **Sitio ${sit}** — ${cams.length} cámaras\n\n${cams.map(c=>`• \`${c.code}\` (${c.tipo}) — \`${c.ip}\` — ${c.estado==='active'?'✅':'❌'}`).join('\n')}`;return `❌ No encontré cámaras en el sitio \`${sit}\`.`;}
+  // reporte
+  if(/reporte|estadística|resumen/i.test(q)){
+    const t=cameras.length,a=cameras.filter(c=>c.estado==='active').length,i=cameras.filter(c=>c.estado==='inactive').length,m=cameras.filter(c=>c.estado==='maintenance').length;
+    const lpr=cameras.filter(c=>c.tipo==='L1').length,ptz=cameras.filter(c=>c.tipo==='P1').length,fija=cameras.filter(c=>['F1','F2','F3'].includes(c.tipo)).length;
+    const depLine=Object.keys(struct.departamentos).map(d=>{const dc=cameras.filter(c=>c.departamento===d);const da=dc.filter(c=>c.estado==='active').length;return `• ${d}: ${dc.length} cámaras (${dc.length?Math.round(da/dc.length*100):0}% operativas)`;}).join('\n');
+    return `📊 **REPORTE GENERAL — ${new Date().toLocaleDateString('es-HN')}**\n\n**Totales:**\n• Total: ${t}\n• Activas: ${a} (${Math.round(a/t*100)}%)\n• Inactivas: ${i}\n• Mantenimiento: ${m}\n\n**Por tipo:**\n• Fijas: ${fija}\n• PTZ: ${ptz}\n• LPR: ${lpr}\n\n**Por departamento:**\n${depLine}`;
+  }
+  return null;
+}
+
+function addMsg(text,type){
+  const body=document.getElementById('chat-body');
+  const div=document.createElement('div');div.className=`msg msg-${type}`;
+  div.innerHTML=type==='ai'?fmtAI(text):escH(text);
+  body.appendChild(div);body.scrollTop=body.scrollHeight;
+}
+function fmtAI(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`(.*?)`/g,'<code>$1</code>').replace(/###\s*(.*?)(\n|$)/g,'<h4>$1</h4>').replace(/\n/g,'<br>');}
+function setSend(on){const btn=document.getElementById('chat-send');btn.innerHTML=on?'<i class="fas fa-circle-notch spin"></i>':'<i class="fas fa-paper-plane"></i>';btn.disabled=on;btn.className='cs'+(on?' loading':'');}
+function clearChat(){if(!confirm('¿Limpiar historial?'))return;document.getElementById('chat-body').innerHTML='<div class="msg msg-ai">Chat limpiado. ¿En qué puedo ayudarte?</div>';aiHist=[];}
+
+function showFBConfig(){
+  localStorage.removeItem(KEYS.FB);
+  // Reset fields
+  ['fb-apikey','fb-dburl','fb-authdomain','fb-projectid'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  showSetup();
+}
+
+// ══════════ EXPORT / IMPORT ══════════
+function exportJSON(){
+  const d={cameras,sites,struct,version:'6.0',fecha:new Date().toISOString()};
+  dl('data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(d,null,2)),`sistema911_${new Date().toISOString().split('T')[0]}.json`);
+  notify('📥 JSON exportado');
+}
+function exportCSV(){
+  const headers=['ID','Código','Tipo','Sitio','Estado','Departamento','Municipio','IP','Máscara','Gateway','DNS1','DNS2','Switch','VLAN','Puerto Switch','Protocolo','Modelo','Cascada','Lat','Lng','Observaciones','Instalación'];
+  const rows=cameras.map(c=>[c.id,c.code,c.tipo,c.sitio,c.estado,c.departamento,c.municipio,c.ip,c.mask,c.gateway,c.dns1,c.dns2,c.switch,c.vlan,c.switchPort,c.protocol,c.model,c.cascada,c.lat,c.lng,(c.observaciones||'').replace(/,/g,';'),c.fechaInstalacion].map(v=>JSON.stringify(v||'')).join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  dl('data:text/csv;charset=utf-8,'+encodeURIComponent(csv),`sistema911_${new Date().toISOString().split('T')[0]}.csv`);
+  notify('📊 CSV exportado');
+}
+function dl(href,name){const a=document.createElement('a');a.href=href;a.download=name;a.click();}
+function importData(){
+  const i=document.createElement('input');i.type='file';i.accept='.json';
+  i.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();r.onload=ev=>{
+      try{const d=JSON.parse(ev.target.result);
+        if(d.cameras&&confirm(`¿Importar ${d.cameras.length} cámaras? Esto reemplazará todos los datos actuales en Firebase.`)){
+          cameras=d.cameras;if(d.sites)sites=d.sites;
+          if(d.struct){struct=d.struct;fbSaveStruct();initDeptSelects();}
+          saveCameras(); // pushes to Firebase
+          fbSaveSites();
+          applyFilters();notify(`✅ ${cameras.length} cámaras importadas y sincronizadas`);
+        }
+      }catch(e){notify('❌ Archivo inválido','error');}
+    };r.readAsText(f);
+  };i.click();
+}
+
+// ══════════ MODAL HELPERS ══════════
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{
+  ['cam-modal','detail-modal','site-modal','dept-modal'].forEach(id=>{if(e.target.id===id)closeM(id);});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')['cam-modal','detail-modal','site-modal','dept-modal'].forEach(id=>closeM(id));
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();document.getElementById('srch').focus();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();openAddCamera();}
+});
+
+// ══════════ PING ENGINE ══════════
+// Browser can't do ICMP ping — we use HTTP fetch with AbortController timeout
+// If camera responds (even with error) = reachable. No response / CORS block = unreachable.
+// Note: on same LAN this works perfectly. Cross-origin cameras will show "unreachable"
+// unless CORS headers are set — the connection attempt itself still measures latency.
+
+const pingCache = {};  // id -> {status, ms, time}
+
+async function httpPing(ip, port='80', timeout=3000) {
+  const proto = port==='443' ? 'https' : 'http';
+  const portSuffix = (port==='80'||port==='443') ? '' : ':'+port;
+  const url = `${proto}://${ip}${portSuffix}/`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), timeout);
+  const t0 = performance.now();
+  try {
+    await fetch(url, {
+      method:'HEAD', mode:'no-cors', cache:'no-store',
+      signal: ctrl.signal,
+      headers:{'Cache-Control':'no-cache'}
+    });
+    clearTimeout(timer);
+    const ms = Math.round(performance.now()-t0);
+    return {ok:true, ms};
+  } catch(e) {
+    clearTimeout(timer);
+    const ms = Math.round(performance.now()-t0);
+    // AbortError = timeout = truly unreachable
+    // TypeError (network error / CORS) = host exists but blocked = reachable!
+    if(e.name==='AbortError') return {ok:false, ms, reason:'Timeout'};
+    // CORS/network error usually means host responded (connection refused or CORS block)
+    return {ok:true, ms, reason:'CORS/blocked (host responde)'};
+  }
+}
+
+// Quick ping: just updates the dot on the card
+async function pingCam(camId, dotEl) {
+  const c = cameras.find(x=>x.id==camId);
+  if(!c||!c.ip) return;
+  dotEl.className='ping-dot ping-checking';
+  dotEl.title='Probando...';
+  const port = c.httpPort||'80';
+  const res = await httpPing(c.ip, port, 4000);
+  pingCache[camId] = {...res, time:new Date().toLocaleTimeString('es-HN')};
+  dotEl.className = `ping-dot ${res.ok?'ping-ok':'ping-bad'}`;
+  dotEl.title = res.ok
+    ? `✅ Alcanzable — ${res.ms}ms (${new Date().toLocaleTimeString('es-HN')})`
+    : `❌ Sin respuesta — Timeout ${res.ms}ms`;
+  dotEl.setAttribute('data-tip', res.ok ? `${res.ms}ms ✅` : `Timeout ❌`);
+}
+
+// Full ping: opens the detailed popup with multi-packet test
+async function pingCamFull(camId) {
+  const c = cameras.find(x=>x.id==camId);
+  if(!c||!c.ip){ notify('⚠️ Esta cámara no tiene IP registrada','error'); return; }
+  showPingPopup(c);
+}
+
+function showPingPopup(c) {
+  // Remove existing popup
+  document.getElementById('ping-popup')?.remove();
+
+  const port = c.httpPort||'80';
+  const proto = port==='443'?'https':'http';
+  const portSuffix = (port==='80'||port==='443')?'':':'+port;
+  const webUrl = `${proto}://${c.ip}${portSuffix}`;
+
+  const popup = document.createElement('div');
+  popup.className = 'ping-popup';
+  popup.id = 'ping-popup';
+  popup.innerHTML = `
+    <div class="pp-hdr">
+      <div class="pp-title">
+        <i class="fas fa-satellite-dish" style="color:var(--yellow)"></i>
+        Ping — <span style="color:var(--accent)">${c.ip}</span>
+        <span style="font-size:10px;color:var(--text3);font-family:'Sora',sans-serif">${c.code}</span>
+      </div>
+      <button class="pp-close" onclick="closePingPopup()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="pp-body">
+      <div class="pp-row"><span class="pp-lbl">Host</span><span class="pp-val" style="color:var(--accent)">${c.ip}</span></div>
+      <div class="pp-row"><span class="pp-lbl">Puerto</span><span class="pp-val">${port}</span></div>
+      <div class="pp-row"><span class="pp-lbl">URL</span><span class="pp-val" style="font-size:11px">${webUrl}</span></div>
+      <div class="pp-row"><span class="pp-lbl">Estado</span><span class="pp-val" id="pp-status"><i class="fas fa-circle-notch spin" style="color:var(--yellow)"></i> Probando...</span></div>
+      <div class="pp-row"><span class="pp-lbl">Latencia</span><span class="pp-val" id="pp-ms">—</span></div>
+      <div class="pp-row"><span class="pp-lbl">Paquetes</span><span class="pp-val" id="pp-pkts">0 / 0 enviados</span></div>
+      <div class="pp-row"><span class="pp-lbl">Pérdida</span><span class="pp-val" id="pp-loss">—</span></div>
+      <div class="pp-row"><span class="pp-lbl">Promedio</span><span class="pp-val" id="pp-avg">—</span></div>
+      <div class="pp-bar"><div class="pp-fill" id="pp-bar" style="width:0%;background:var(--yellow)"></div></div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;text-align:right" id="pp-prog">Iniciando...</div>
+      <div class="pp-packets" id="pp-packets"></div>
+      <div class="pp-actions">
+        <a href="${webUrl}" target="_blank" rel="noopener" class="btn btn-grn btn-sm"><i class="fas fa-globe"></i>Abrir Web</a>
+        <button class="btn btn-sm" id="pp-restart" onclick="pingCamFull(${c.id})"><i class="fas fa-redo"></i>Repetir</button>
+        <button class="btn btn-sm" onclick="closePingPopup()"><i class="fas fa-times"></i>Cerrar</button>
+      </div>
+    </div>`;
+
+  // Position near center-top
+  document.body.appendChild(popup);
+  popup.style.top = '80px';
+  popup.style.left = '50%';
+  popup.style.transform = 'translateX(-50%)';
+
+  // Close on outside click
+  setTimeout(()=>{
+    document.addEventListener('click', ppOutsideHandler);
+  }, 100);
+
+  runPingSequence(c.id, c.ip, port);
+}
+
+function ppOutsideHandler(e) {
+  const p = document.getElementById('ping-popup');
+  if(p && !p.contains(e.target)) closePingPopup();
+}
+
+function closePingPopup() {
+  document.getElementById('ping-popup')?.remove();
+  document.removeEventListener('click', ppOutsideHandler);
+  pingRunning = false;
+}
+
+let pingRunning = false;
+const PING_COUNT = 8;
+
+async function runPingSequence(camId, ip, port) {
+  pingRunning = true;
+  const results = [];
+  const pktsEl = document.getElementById('pp-packets');
+  if(!pktsEl) return;
+
+  // Init packet indicators
+  pktsEl.innerHTML = Array.from({length:PING_COUNT},(_,i)=>
+    `<div class="pp-pkt pending" id="pkt-${i}">?</div>`).join('');
+
+  for(let i=0; i<PING_COUNT; i++) {
+    if(!pingRunning || !document.getElementById('ping-popup')) return;
+
+    const pktEl = document.getElementById(`pkt-${i}`);
+    if(pktEl) { pktEl.className='pp-pkt pending'; pktEl.textContent='…'; }
+
+    const res = await httpPing(ip, port, 4000);
+    results.push(res);
+
+    if(!document.getElementById('ping-popup')) return;
+
+    // Update packet indicator
+    if(pktEl) {
+      pktEl.className = `pp-pkt ${res.ok?'ok':'fail'}`;
+      pktEl.textContent = res.ok ? `${res.ms}` : '✕';
+      pktEl.title = res.ok ? `${res.ms}ms` : `Timeout`;
+    }
+
+    // Update stats
+    const sent = i+1;
+    const recv = results.filter(r=>r.ok).length;
+    const loss = Math.round((1-recv/sent)*100);
+    const okMs = results.filter(r=>r.ok).map(r=>r.ms);
+    const avg = okMs.length ? Math.round(okMs.reduce((a,b)=>a+b,0)/okMs.length) : 0;
+    const min_ = okMs.length ? Math.min(...okMs) : 0;
+    const max_ = okMs.length ? Math.max(...okMs) : 0;
+    const successRate = Math.round(recv/sent*100);
+
+    txt('pp-pkts', `${recv} / ${sent} recibidos`);
+    txt('pp-loss', `${loss}%`);
+    txt('pp-avg', okMs.length ? `${avg}ms (min:${min_} max:${max_})` : '—');
+    txt('pp-ms', res.ok ? `${res.ms}ms` : 'Sin respuesta');
+    txt('pp-prog', `Paquete ${sent}/${PING_COUNT} — ${res.ok?'OK':'FAIL'}`);
+
+    const bar = document.getElementById('pp-bar');
+    if(bar) {
+      const prog = (sent/PING_COUNT)*100;
+      bar.style.width = prog+'%';
+      bar.style.background = successRate>75?'var(--green)':successRate>40?'var(--yellow)':'var(--red)';
+    }
+
+    const statusEl = document.getElementById('pp-status');
+    if(statusEl) {
+      if(recv===0 && sent===PING_COUNT) {
+        statusEl.innerHTML=`<span style="color:var(--red)">❌ Sin respuesta</span>`;
+      } else if(sent<PING_COUNT) {
+        statusEl.innerHTML=`<i class="fas fa-circle-notch spin" style="color:var(--yellow)"></i> Probando ${sent}/${PING_COUNT}...`;
+      } else {
+        statusEl.innerHTML = successRate>75
+          ? `<span style="color:var(--green)">✅ Alcanzable</span>`
+          : successRate>0
+          ? `<span style="color:var(--yellow)">⚠️ Inestable (${successRate}%)</span>`
+          : `<span style="color:var(--red)">❌ Sin respuesta</span>`;
+      }
+    }
+
+    // Update dot on card if visible
+    const dot = document.getElementById(`pd-${camId}`);
+    if(dot) {
+      dot.className = `ping-dot ${recv>0?'ping-ok':'ping-bad'}`;
+      dot.title = recv>0 ? `✅ ${avg}ms promedio` : '❌ Sin respuesta';
+    }
+
+    // Update cache
+    pingCache[camId] = {ok:recv>0, ms:avg, loss, time:new Date().toLocaleTimeString('es-HN'), recv, sent};
+
+    // Small delay between pings
+    if(i < PING_COUNT-1) await delay(600);
+  }
+  pingRunning = false;
+}
+
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+// ══════════ UTILS ══════════
+function txt(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function escH(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+function cp(t){navigator.clipboard.writeText(t).then(()=>notify('📋 Copiado')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();notify('📋 Copiado');});}
+function notify(msg,type='success'){
+  const n=document.createElement('div');n.className='notif';
+  const clr={success:'var(--green)',error:'var(--red)',info:'var(--accent)'};
+  n.style.borderColor=clr[type]||clr.success;
+  n.innerHTML=`<i class="fas fa-${type==='error'?'exclamation-circle':type==='info'?'info-circle':'check-circle'}" style="color:${clr[type]||clr.success}"></i><span>${msg}</span>`;
+  document.body.appendChild(n);
+  setTimeout(()=>{n.style.opacity='0';n.style.transform='translateX(100%)';n.style.transition='all .3s';setTimeout(()=>n.remove(),300);},3200);
+}
+function updateTime(){
+  const el=document.getElementById('cur-time');
+  if(el)el.textContent=new Date().toLocaleDateString('es-HN',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+</script>
+</body>
+</html>
