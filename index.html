@@ -631,7 +631,7 @@ let changeLog={};
 
 // Firebase state
 let fbApp=null,fbDB=null,fbConnected=false;
-let fbListeners={};
+let fbListeners={},lastSyncTime=null,onlineUsers=1;
 
 let struct={
   departamentos:{
@@ -645,22 +645,26 @@ let kb={conexiones:{},procedimientos:[],aprendido:[]};
 
 // ══════════ AUTO INIT — conecta automático al abrir ══════════
 document.addEventListener('DOMContentLoaded', async ()=>{
-  fbProgress(20,'Cargando Firebase SDK...');
+  fbProgress(10,'Cargando Firebase SDK...');
+
+  // Show fallback button after 5 seconds in case something hangs
+  const fallbackTimer = setTimeout(()=>{
+    const msgEl=document.getElementById('fb-loading-msg');
+    if(msgEl) msgEl.innerHTML='Tardando más de lo normal... <button onclick="useLocalOnly()" style="background:var(--blue2);color:#fff;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:8px">Entrar sin Firebase</button>';
+  }, 5000);
+
   try {
     await loadFirebaseSDK();
-    fbProgress(50,'Inicializando base de datos...');
+    fbProgress(50,'Conectando con base de datos...');
     await initFirebase();
+    clearTimeout(fallbackTimer);
     fbProgress(100,'¡Conectado!');
-    setTimeout(()=>hideSetup(), 400);
+    setTimeout(()=>hideSetup(), 500);
   } catch(e) {
+    clearTimeout(fallbackTimer);
     console.error('Firebase error:',e);
-    // Si falla Firebase, cargamos en modo local sin bloquear
-    document.getElementById('fb-loading-msg').textContent = '⚠️ Sin internet — cargando modo local';
-    document.getElementById('fb-loading-msg').style.color = 'var(--yellow)';
-    setTimeout(()=>{
-      hideSetup();
-      useLocalOnly();
-    }, 1500);
+    const msgEl=document.getElementById('fb-loading-msg');
+    if(msgEl) msgEl.innerHTML=`⚠️ Error: ${e.message} <button onclick="useLocalOnly()" style="background:var(--blue2);color:#fff;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-left:8px">Entrar sin Firebase</button>`;
   }
 });
 
@@ -700,28 +704,36 @@ function loadScript(src){
 }
 
 async function initFirebase(){
-  if(firebase.apps.length) firebase.apps.forEach(a=>a.delete());
-  fbApp=firebase.initializeApp(FB_CREDS);
-  fbDB=firebase.database();
+  if(window.firebase && firebase.apps.length){
+    firebase.apps.forEach(a=>{ try{a.delete();}catch(e){} });
+  }
+  fbApp = firebase.initializeApp(FB_CREDS);
+  fbDB  = firebase.database();
 
-  return new Promise((resolve,reject)=>{
-    let resolved=false;
-    const timeout=setTimeout(()=>{
-      if(!resolved) reject(new Error('Timeout — verifica conexión a internet'));
-    },12000);
+  return new Promise((resolve, reject)=>{
+    let resolved = false;
+    // Firebase .info/connected starts as FALSE then switches to TRUE once connected
+    // We give it 8 seconds max
+    const timeout = setTimeout(()=>{
+      if(!resolved) reject(new Error('Sin respuesta de Firebase en 8 segundos. Verifica tu conexión a internet.'));
+    }, 8000);
 
-    fbDB.ref('.info/connected').on('value',snap=>{
-      if(snap.val()===true && !resolved){
-        resolved=true;
+    fbDB.ref('.info/connected').on('value', snap=>{
+      const connected = snap.val();
+      if(connected === true && !resolved){
+        resolved = true;
         clearTimeout(timeout);
-        fbConnected=true;
-        fbProgress(80,'Cargando datos del sistema...');
-        setSyncStatus('synced','Conectado · Firebase UST 911 Copán');
+        fbConnected = true;
+        fbProgress(80,'Cargando datos de cámaras...');
+        setSyncStatus('synced','🟢 Conectado · Firebase UST 911 Copán');
         startFirebaseSync();
         resolve();
-      }
-      if(snap.val()===false && resolved){
-        fbConnected=false;
+      } else if(connected === false && !resolved){
+        // This is normal at startup — Firebase briefly shows false before connecting
+        // Just update the message, don't reject yet
+        fbProgress(60,'Esperando conexión...');
+      } else if(connected === false && resolved){
+        fbConnected = false;
         setSyncStatus('offline','Sin conexión — reintentando...');
       }
     });
@@ -729,7 +741,6 @@ async function initFirebase(){
 }
 
 // ══════════ FIREBASE SYNC ══════════
-const FB_PATH='sistema911'; // root path in your DB — change if needed
 
 async function startFirebaseSync(){
   setSyncStatus('syncing','Cargando datos...');
